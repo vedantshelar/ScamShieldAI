@@ -1,0 +1,345 @@
+/* src/components/ScamQuiz.module.css */
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: fadeIn 0.4s ease-in-out;
+    height: 100%;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .header .title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #1c1917;
+  }
+  
+  .header .subtitle {
+    color: #78716c;
+    font-size: 0.95rem;
+    margin-top: 0.25rem;
+  }
+  
+  .gameArea {
+    flex: 1;
+    background: #ffffff;
+    border-radius: 1.25rem;
+    padding: 2.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(255, 107, 43, 0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+    /* REMOVED justify-content: center; to prevent top-clipping */
+    justify-content: flex-start; 
+    
+    /* ADDED overflow-y so the card can scroll internally on tiny screens */
+    overflow-y: auto; 
+    min-height: 500px;
+  }
+  
+ /* Update 2: Auto-margin perfectly centers these screens vertically! */
+.startScreen, .resultScreen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 500px;
+    animation: scaleUp 0.3s ease-out;
+    margin: auto; /* <--- THIS IS THE MAGIC FIX FOR CENTERING */
+  }
+
+  @keyframes scaleUp {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  
+  .shieldWrapper {
+    width: 90px;
+    height: 90px;
+    background: #fff7ed;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    border: 4px solid #fed7aa;
+  }
+  
+  .heroIcon {
+    font-size: 3rem;
+    color: #ea580c;
+  }
+  
+  .awardIcon {
+    font-size: 5rem;
+    color: #fbbf24; /* Gold */
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 4px 10px rgba(251, 191, 36, 0.4));
+  }
+  
+  .startScreen h3, .resultScreen h3 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #1c1917;
+    margin-bottom: 1rem;
+  }
+  
+  .startScreen p, .resultMessage {
+    font-size: 1rem;
+    color: #57534e;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+  
+  .primaryBtn {
+    background: linear-gradient(135deg, #ff8a00, #ff5e00);
+    color: white;
+    border: none;
+    padding: 1rem 2.5rem;
+    border-radius: 2rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 20px rgba(255, 107, 43, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .primaryBtn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(255, 107, 43, 0.35);
+  }
+  
+  .finalScoreBox {
+    background: #fafaf9;
+    border: 2px solid #e7e5e4;
+    padding: 1.5rem 3rem;
+    border-radius: 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .scoreLabel {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #78716c;
+  }
+  
+  .scoreValue {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #ea580c;
+  }
+  
+  /* --- Playing Screen --- */
+  .quizScreen {
+    width: 100%;
+    max-width: 700px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: fadeIn 0.3s ease;
+    margin-top: 1rem; /* Gives it a little breathing room from the top */
+    margin-bottom: auto; /* Pushes the empty space to the bottom */
+  }
+  
+  .progressHeader {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    color: #57534e;
+    font-size: 0.95rem;
+  }
+  
+  .scoreCounter {
+    color: #ea580c;
+  }
+  
+  .progressBar {
+    width: 100%;
+    height: 8px;
+    background-color: #f5f5f4;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  
+  .progressFill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff8a00, #ff5e00);
+    border-radius: 4px;
+    transition: width 0.4s ease-out;
+  }
+  
+  .scenarioCard {
+    background: #fafaf9;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    border: 1px solid #e7e5e4;
+    margin-bottom: 0.5rem;
+  }
+  
+  .scenarioType {
+    display: inline-block;
+    background: #1c1917;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    letter-spacing: 1px;
+  }
+  
+  .scenarioText {
+    font-size: 1.15rem;
+    color: #1c1917;
+    font-weight: 600;
+    line-height: 1.5;
+    margin: 0;
+  }
+  
+  /* --- Options --- */
+  .optionsList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .optionBtn {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: #ffffff;
+    border: 2px solid #e7e5e4;
+    border-radius: 0.75rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  
+  .optionBtn:hover:not(:disabled) {
+    border-color: #ffbba6;
+    background: #fff7ed;
+  }
+  
+  .optionLetter {
+    background: #f5f5f4;
+    color: #57534e;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+  
+  .optionText {
+    flex: 1;
+    font-size: 1rem;
+    color: #1c1917;
+    font-weight: 500;
+  }
+  
+  .feedbackIcon {
+    font-size: 1.5rem;
+  }
+  
+  /* Answer Feedback States */
+  .correctOption {
+    border-color: #10b981;
+    background: #ecfdf5;
+  }
+  
+  .correctOption .optionLetter { background: #10b981; color: white; }
+  .correctOption .feedbackIcon { color: #10b981; }
+  
+  .wrongOption {
+    border-color: #dc2626;
+    background: #fef2f2;
+  }
+  
+  .wrongOption .optionLetter { background: #dc2626; color: white; }
+  .wrongOption .feedbackIcon { color: #dc2626; }
+  
+  .disabledOption {
+    opacity: 0.6;
+  }
+  
+  /* --- Explanation Box --- */
+  .explanationBox {
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin-top: 1rem;
+    animation: fadeIn 0.4s ease;
+  }
+  
+  .expCorrect {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+  }
+  
+  .expCorrect h4 { color: #059669; }
+  
+  .expWrong {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+  }
+  
+  .expWrong h4 { color: #dc2626; }
+  
+  .explanationBox h4 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+  }
+  
+  .explanationBox p {
+    color: #57534e;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+  }
+  
+  .nextBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 1rem;
+    background: #1c1917;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .nextBtn:hover {
+    background: #44403c;
+  }
+  
+  /* --- Responsive --- */
+  @media (max-width: 768px) {
+    .gameArea {
+      padding: 1.5rem;
+      min-height: auto;
+    }
+  }

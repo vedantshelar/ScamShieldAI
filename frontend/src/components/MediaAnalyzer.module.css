@@ -1,0 +1,438 @@
+/* src/components/MediaAnalyzer.module.css */
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: fadeIn 0.4s ease-in-out;
+    height: 100%;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .header .title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #1c1917;
+  }
+  
+  .header .subtitle {
+    color: #78716c;
+    font-size: 0.95rem;
+    margin-top: 0.25rem;
+  }
+  
+  /* --- Tabs --- */
+  .tabContainer {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .tab, .activeTab {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 2rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+  }
+  
+  .tab {
+    background-color: #ffffff;
+    color: #57534e;
+    border: 1px solid #e7e5e4;
+  }
+  
+  .tab:hover {
+    background-color: #f5f5f4;
+    color: #1c1917;
+  }
+  
+  .activeTab {
+    background: linear-gradient(135deg, #ff8a00, #ff5e00);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(255, 107, 43, 0.2);
+  }
+  
+  .tabIcon {
+    font-size: 1.1rem;
+  }
+  
+  /* --- Upload Zone --- */
+  .uploadZone {
+    background-color: #fff7ed;
+    border: 2px dashed #ffbba6;
+    border-radius: 1.25rem;
+    padding: 4rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: all 0.3s ease;
+    flex: 1;
+  }
+  
+  .uploadZone:hover {
+    background-color: #ffedd5;
+    border-color: #ff8a00;
+  }
+  
+  .uploadIconCircle {
+    width: 72px;
+    height: 72px;
+    background-color: #ffffff;
+    color: #ea580c;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(234, 88, 12, 0.1);
+  }
+  
+  .uploadZone h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1c1917;
+    margin-bottom: 0.5rem;
+  }
+  
+  .uploadZone p {
+    color: #78716c;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .orDivider {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 300px;
+    margin: 1.5rem 0;
+    color: #d6d3d1;
+  }
+  
+  .orDivider::before, .orDivider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #d6d3d1;
+  }
+  
+  .orDivider span {
+    padding: 0 1rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  
+  .browseButton {
+    background-color: #ffffff;
+    color: #ea580c;
+    border: 1px solid #ea580c;
+    padding: 0.75rem 2rem;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .browseButton:hover {
+    background-color: #ea580c;
+    color: #ffffff;
+  }
+  
+  /* --- Analysis Grid --- */
+  .analysisGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    flex: 1;
+  }
+  
+  .mediaColumn, .aiColumn {
+    background: #ffffff; 
+    border-radius: 1.25rem;
+    border: 1px solid rgba(255, 107, 43, 0.1);
+    padding: 1.5rem; 
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    display: flex; 
+    flex-direction: column; 
+    gap: 1.25rem;
+    
+    /* 🔥 THE MAGIC FIX: Prevents Grid Blowout 🔥 */
+    min-width: 0; 
+  }
+  
+  .cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f5f5f4;
+  }
+  
+  .cardTitle {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1c1917;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .iconButton {
+    background: none;
+    border: none;
+    color: #a8a29e;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  
+  .iconButton:hover {
+    color: #dc2626;
+  }
+  
+  /* --- Media Previews --- */
+  .previewBox {
+    background: #fafaf9; 
+    border-radius: 1rem; 
+    overflow: hidden;
+    position: relative; 
+    min-height: 200px; 
+    
+    /* 🔥 Limit the maximum height so huge screenshots don't take over the screen */
+    max-height: 400px; 
+    
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    width: 100%;
+  }
+
+  .imagePlaceholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #a8a29e;
+    font-weight: 600;
+  }
+  
+  .placeholderIcon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+  }
+
+
+  .imageContainer { 
+    position: relative; 
+    width: 100%; 
+    height: 100%; 
+    display: flex;
+    justify-content: center;
+  }
+  
+  .uploadedImage { 
+    width: 100%; 
+    max-height: 400px;
+    
+    /* 🔥 object-fit: contain makes sure the whole image fits without stretching or breaking the box */
+    object-fit: contain; 
+    display: block; 
+  }
+  
+  /* The Cool Laser Scanner Line */
+  .scannerLine {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: #ff6b2b;
+    box-shadow: 0 0 15px 3px rgba(255, 107, 43, 0.5);
+    animation: scanImage 1.5s ease-in-out infinite alternate;
+  }
+  
+  @keyframes scanImage {
+    0% { top: 0%; }
+    100% { top: 100%; }
+  }
+  
+  /* Audio Waveform Animation */
+  .audioWaveform {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 60px;
+  }
+  
+  .waveBar {
+    width: 8px;
+    height: 10px;
+    background-color: #ff8a00;
+    border-radius: 4px;
+    transition: height 0.2s;
+  }
+  
+  .animateWave {
+    animation: equalize 1s ease-in-out infinite alternate;
+  }
+  
+  @keyframes equalize {
+    0% { height: 10px; }
+    100% { height: 60px; }
+  }
+  
+  /* --- Extracted Text --- */
+  .extractedTextContainer {
+    background: #1c1917;
+    border-radius: 0.75rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .textHeader {
+    background: #292524;
+    padding: 0.5rem 1rem;
+    color: #a8a29e;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .textBody {
+    padding: 1rem;
+    color: #4ade80; /* Hacker Green for raw data */
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    overflow-y: auto;
+  }
+  
+  .loadingText {
+    color: #a8a29e;
+    animation: pulse 1.5s infinite;
+  }
+  
+  /* --- AI Column States --- */
+  .aiEngineBody {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .waitingState {
+    text-align: center;
+    color: #78716c;
+  }
+  
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f5f5f4;
+    border-top: 4px solid #ff6b2b;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem auto;
+  }
+  
+  .radarIcon {
+    font-size: 3rem;
+    color: #ff6b2b;
+    margin-bottom: 1rem;
+    animation: pulse 1.5s infinite;
+  }
+  
+  .pulseText {
+    color: #ea580c;
+    font-weight: 600;
+  }
+  
+  /* --- Final Result --- */
+  .finalResult {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .scoreCircle {
+    width: 110px;
+    height: 110px;
+    border: 5px solid #dc2626;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    color: #dc2626;
+    background: #fef2f2;
+  }
+  
+  .scoreText {
+    font-size: 2.25rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  
+  .scoreLabel {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  
+  .verdictBox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #dc2626;
+    margin-bottom: 1.5rem;
+  }
+  
+  .dangerIcon {
+    font-size: 1.5rem;
+  }
+  
+  .verdictBox h3 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0;
+  }
+  
+  .actionWarning {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    text-align: left;
+  }
+  
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .analysisGrid { grid-template-columns: 1fr; }
+  }

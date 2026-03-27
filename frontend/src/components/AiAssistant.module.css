@@ -1,0 +1,305 @@
+/* src/components/AiAssistant.module.css */
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: fadeIn 0.4s ease-in-out;
+    height: 100%; /* Ensures it fills the outlet */
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #1c1917;
+  }
+  
+  .subtitle {
+    color: #78716c;
+    font-size: 0.95rem;
+    margin-top: 0.25rem;
+  }
+  
+  /* --- Segmented Toggle Switch --- */
+  .modeToggle {
+    display: flex;
+    background-color: #f5f5f4;
+    padding: 0.35rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e7e5e4;
+  }
+  
+  .toggleIcon {
+    margin-right: 0.5rem;
+    font-size: 1.1rem;
+  }
+  
+  .inactiveToggle, .activeTogglePre, .activeTogglePost {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+  }
+  
+  .inactiveToggle {
+    background: transparent;
+    color: #78716c;
+  }
+  
+  .inactiveToggle:hover {
+    color: #1c1917;
+  }
+  
+  .activeTogglePre {
+    background: linear-gradient(135deg, #10b981, #059669); /* Safe Green for Pre-Scam */
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  }
+  
+  .activeTogglePost {
+    background: linear-gradient(135deg, #ff8a00, #dc2626); /* Urgent Red/Orange for Post-Scam */
+    color: white;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+  }
+  
+  /* --- Chat Interface --- */
+  .chatWindow {
+    flex: 1;
+    background: #ffffff;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(255, 107, 43, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 500px;
+  }
+  
+  .messageArea {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    background-color: #fafaf9; /* Slight contrast from the chat window edge */
+  }
+  
+  /* --- Chat Bubbles --- */
+  .messageRowAi {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-end;
+    gap: 0.75rem;
+  }
+  
+  .messageRowUser {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+    gap: 0.75rem;
+  }
+  
+  .avatarAi, .avatarUser {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  
+  .avatarAi {
+    background-color: #fff7ed;
+    color: #ea580c;
+    border: 1px solid #fed7aa;
+  }
+  
+  .avatarUser {
+    background-color: #e0e7ff;
+    color: #4f46e5;
+    border: 1px solid #c7d2fe;
+  }
+  
+  .bubbleAi {
+    background-color: #ffffff;
+    border: 1px solid #e7e5e4;
+    color: #1c1917;
+    padding: 1rem 1.25rem;
+    border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+    max-width: 75%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    line-height: 1.5;
+    font-size: 0.95rem;
+  }
+  
+  .bubbleAi p { margin: 0 0 0.5rem 0; }
+  .bubbleAi p:last-child { margin: 0; }
+  
+  .bubbleUser {
+    background: linear-gradient(135deg, #ff8a00, #ff5e00);
+    color: #ffffff;
+    padding: 1rem 1.25rem;
+    border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+    max-width: 75%;
+    box-shadow: 0 4px 12px rgba(255, 107, 43, 0.2);
+    line-height: 1.5;
+    font-size: 0.95rem;
+  }
+  
+  .bubbleUser p { margin: 0; }
+  
+  /* Animated Typing Dots */
+  .typingIndicator {
+    display: flex;
+    gap: 4px;
+    padding: 0.5rem;
+  }
+  
+  .typingIndicator span {
+    width: 6px;
+    height: 6px;
+    background-color: #a8a29e;
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both;
+  }
+  
+  .typingIndicator span:nth-child(1) { animation-delay: -0.32s; }
+  .typingIndicator span:nth-child(2) { animation-delay: -0.16s; }
+  
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+  }
+  
+  /* --- Input Area --- */
+  .inputContainer {
+    background-color: #ffffff;
+    padding: 1.5rem;
+    border-top: 1px solid #e7e5e4;
+  }
+  
+  .quickPrompts {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    /* Hide scrollbar */
+    scrollbar-width: none; 
+  }
+  
+  .quickPrompts::-webkit-scrollbar { display: none; }
+  
+  .promptChip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background-color: #f5f5f4;
+    border: 1px solid #d6d3d1;
+    color: #57534e;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  
+  .promptChip:hover {
+    background-color: #fff7ed;
+    border-color: #fed7aa;
+    color: #ea580c;
+  }
+  
+  .chipIcon {
+    font-size: 0.9rem;
+  }
+  
+  .inputBox {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .textInput {
+    flex: 1;
+    background-color: #fafaf9;
+    border: 1px solid #d6d3d1;
+    padding: 1rem 1.25rem;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-family: inherit;
+    color: #1c1917;
+    outline: none;
+    transition: all 0.3s;
+  }
+  
+  .textInput:focus {
+    border-color: #ff6b2b;
+    box-shadow: 0 0 0 3px rgba(255, 107, 43, 0.1);
+    background-color: #ffffff;
+  }
+  
+  .sendButton {
+    background: linear-gradient(135deg, #ff8a00, #ff5e00);
+    color: white;
+    border: none;
+    width: 52px;
+    height: 52px;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(255, 107, 43, 0.25);
+  }
+  
+  .sendButton:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(255, 107, 43, 0.35);
+  }
+  
+  .sendButton:disabled {
+    background: #d6d3d1;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  
+  /* --- Responsive --- */
+  @media (max-width: 768px) {
+    .header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .modeToggle {
+      justify-content: center;
+    }
+    
+    .bubbleAi, .bubbleUser {
+      max-width: 85%;
+    }
+  }

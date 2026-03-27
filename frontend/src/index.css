@@ -1,0 +1,21 @@
+/* src/index.css */
+
+/* 1. Remove all browser default margins and padding */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  /* 2. Ensure the body and root take up the full screen height */
+  html, body, #root {
+    width: 100%;
+    min-height: 100vh;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: #fafaf9; /* Matches your landing page background */
+  }
+  
+  /* 3. Remove default link underlines and list styles globally if needed */
+  a {
+    text-decoration: none;
+  }

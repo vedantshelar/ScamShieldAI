@@ -1,0 +1,7 @@
+.subComponent {
+    font-family: sans-serif;
+  }
+  .titleRed { color: #f87171; font-size: 1.25rem; font-weight: bold; }
+  .titleBlue { color: #60a5fa; font-size: 1.25rem; font-weight: bold; }
+  .titleGreen { color: #4ade80; font-size: 1.25rem; font-weight: bold; }
+  .text { color: #cbd5e1; margin-top: 0.5rem; }
