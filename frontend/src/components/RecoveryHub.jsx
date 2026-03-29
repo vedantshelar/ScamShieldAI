@@ -39,7 +39,7 @@ export default function RecoveryHub() {
     try {
       // Send the data to your Node route
       const response = await axios.post(
-        'http://localhost:4000/api/reports',
+        `${import.meta.env.VITE_BACKEND_URL}/api/reports`,
         formData, // Sends category, scammerDetails, and description
         { withCredentials: true } // CRITICAL: Proves the user is logged in!
       );

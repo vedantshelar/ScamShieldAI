@@ -41,13 +41,13 @@ export default function MediaAnalyzer() {
       // Route to the correct Node.js endpoint based on the active tab
       if (activeTab === 'image') {
         formData.append('scamImage', file); 
-        response = await axios.post('http://localhost:4000/api/scan-image', formData, {
+        response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/scan-image`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
           withCredentials: true
         });
       } else if (activeTab === 'audio') {
         formData.append('scamAudio', file); 
-        response = await axios.post('http://localhost:4000/api/scan-audio', formData, {
+        response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/scan-audio`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
           withCredentials: true
         });

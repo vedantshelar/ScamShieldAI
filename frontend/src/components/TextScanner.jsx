@@ -1,7 +1,6 @@
 // src/components/TextScanner.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
-// Removed FiFilter since we don't need the dropdown icon anymore
 import { FiSmartphone, FiShield, FiAlertOctagon, FiCheckCircle, FiCrosshair, FiCpu } from 'react-icons/fi';
 import styles from './TextScanner.module.css';
 
@@ -10,7 +9,6 @@ export default function TextScanner() {
   const [isScanning, setIsScanning] = useState(false);
   const [result, setResult] = useState(null);
 
-  // Demo messages for the hackathon pitch
   const demoMessages = {
     otp: "Dear Customer, your Airtel SIM will be blocked in 24 hrs. Please reply with the OTP 8493 to verify your KYC.",
     job: "Congratulations! You have been selected for a remote part-time job. Earn ₹5000 daily. Click the WhatsApp link to contact HR: wa.me/fake-link",
@@ -19,7 +17,6 @@ export default function TextScanner() {
     safe: "Hi mom, I'll be late for dinner tonight. See you around 8 PM!"
   };
 
-  // 🔥 THE REAL BACKEND CONNECTION (AUTO-ROUTING) 🔥
   const handleScan = async () => {
     if (!inputText.trim()) return;
     
@@ -27,8 +24,7 @@ export default function TextScanner() {
     setResult(null);
 
     try {
-      // 1. Send ONLY the text. The Node.js backend will Auto-Detect the category!
-      const response = await axios.post('http://localhost:4000/api/scan', {
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/scan`, {
         message: inputText
       });
 
@@ -43,6 +39,7 @@ export default function TextScanner() {
         type: 'Server Disconnected',
         manipulation: ['Offline'],
         explanation: 'Could not connect to the ScamShieldAI neural network. Please ensure the Node.js and Python microservices are running on ports 4000 and 5000.',
+        recovery_steps: ['Check Node.js console', 'Check Python Flask console'], // Fallback steps
         expert_used: 'None'
       });
     } finally {
@@ -60,7 +57,7 @@ export default function TextScanner() {
 
       <div className={styles.splitView}>
         
-        {/* LEFT PANEL: Input Area */}
+        {/* LEFT PANEL */}
         <div className={styles.inputPanel}>
           <div className={styles.panelHeader}>
             <FiSmartphone className={styles.panelIcon} />
@@ -82,7 +79,6 @@ export default function TextScanner() {
             {isScanning ? 'Auto-Detecting & Analyzing...' : 'Scan Message'}
           </button>
 
-          {/* Hackathon Demo Injectors - Cleaned up! */}
           <div className={styles.demoSection}>
             <p>Quick Demo Injectors:</p>
             <div className={styles.demoButtons} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -95,14 +91,13 @@ export default function TextScanner() {
           </div>
         </div>
 
-        {/* RIGHT PANEL: AI Analysis Results */}
+        {/* RIGHT PANEL */}
         <div className={styles.resultPanel}>
           <div className={styles.panelHeader}>
             <FiCpu className={styles.panelIcon} />
             <h3>AI Analysis Engine</h3>
           </div>
 
-          {/* State 1: Waiting for input */}
           {!isScanning && !result && (
             <div className={styles.emptyState}>
               <FiCrosshair className={styles.emptyIcon} />
@@ -111,7 +106,6 @@ export default function TextScanner() {
             </div>
           )}
 
-          {/* State 2: Scanning Animation */}
           {isScanning && (
             <div className={styles.scanningState}>
               <div className={styles.radar}></div>
@@ -119,7 +113,6 @@ export default function TextScanner() {
             </div>
           )}
 
-          {/* State 3: Analysis Results */}
           {!isScanning && result && (
             <div className={`${styles.resultContent} ${styles[result.status]}`}>
               
@@ -136,7 +129,6 @@ export default function TextScanner() {
                 </div>
               </div>
 
-              {/* 🌟 Expert Badge dynamically populated by Node & Python! */}
               <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <FiShield /> Scored by: <strong>{result.expert_used === 'Not sure' ? 'General Threat' : result.expert_used} Expert Model</strong>
               </div>
@@ -158,6 +150,20 @@ export default function TextScanner() {
                 <h4>Why did AI flag this?</h4>
                 <p className={styles.explanationText}>{result.explanation}</p>
               </div>
+
+              {/* 🌟 NEW: RECOVERY STEPS (Only show if it's a scam and steps exist) */}
+              {(result.status === 'danger' || result.status === 'warning') && result.recovery_steps && result.recovery_steps.length > 0 && (
+                <div className={styles.analysisBox} style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5' }}>
+                  <h4 style={{ color: '#991b1b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <FiShield />Immdediate Recovery Steps:
+                  </h4>
+                  <ul style={{ paddingLeft: '20px', color: '#7f1d1d', marginTop: '8px', fontSize: '0.95rem' }}>
+                    {result.recovery_steps.map((step, idx) => (
+                      <li key={idx} style={{ marginBottom: '4px' }}>{step}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
             </div>
           )}

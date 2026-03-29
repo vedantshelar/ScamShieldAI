@@ -26,7 +26,7 @@ export default function AuthPage() {
     const checkAuthStatus = async () => {
       try {
         // Ask Node if we have a valid HTTP-Only cookie
-        await axios.get('http://localhost:4000/api/auth/check', { 
+        await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/auth/check`, { 
           withCredentials: true 
         });
         
@@ -48,13 +48,13 @@ export default function AuthPage() {
 
     try {
       if (!isLogin) {
-        await axios.post('http://localhost:4000/api/auth/signup', 
+        await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/signup`, 
           { name, email, password }, 
           { withCredentials: true }
         );
         navigate('/dashboard');
       } else {
-        await axios.post('http://localhost:4000/api/auth/login', 
+        await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/login`, 
           { email, password }, 
           { withCredentials: true }
         );

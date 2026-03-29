@@ -303,15 +303,156 @@ app.post('/api/auth/logout', (req, res) => {
 //     }
 // });
 
-// --- THE HYBRID API ROUTE (AUTO-ROUTING ENABLED) ---
+// // --- THE HYBRID API ROUTE (AUTO-ROUTING ENABLED) ---
+// app.post('/api/scan', async (req, res) => {
+//   try {
+//       // 🌟 Remove category from req.body since we are auto-detecting it!
+//       const { message } = req.body;
+      
+//       if (!message) return res.status(400).json({ error: "Message is required" });
+
+//       console.log(`\n📩 1. Received message: "${message}"`);
+
+//       // ==========================================
+//       // PHASE 0: Auto-Detect Category with Groq LLM
+//       // ==========================================
+//       console.log(`🤖 1.5. Asking Groq to auto-detect the expert category...`);
+      
+//       const routingPrompt = `You are a strict categorization AI. Read the message and categorize it into EXACTLY ONE of these four strings: "Bank", "OTP", "Digital arrest", or "Not sure". 
+        
+//       RULES & PRIORITIES:
+//       1. "OTP": Highest priority. If the message explicitly contains a One Time Password, OTP, verification code, or PIN, output "OTP" (Even if it mentions a bank).
+//       2. "Bank": If it mentions money deducted/credited, bank accounts, credit cards, EMI, or KYC updates, output "Bank".
+//       3. "Digital arrest": If it mentions Police, CBI, Customs, FedEx package seized, Supreme Court, or arrest warrants, output "Digital arrest".
+//       4. "Not sure": If it is a job offer, part-time work, lottery scam, regular conversation, or anything else, output "Not sure".
+
+//       You MUST output ONLY valid JSON. DO NOT invent new categories. Use exact capitalization.
+      
+//       Required JSON Structure: 
+//       {"category": "Insert exact string here"}`;
+
+//       const routingCompletion = await groq.chat.completions.create({
+//           messages: [
+//               { role: "system", content: routingPrompt },
+//               { role: "user", content: `Message: "${message}"` }
+//           ],
+//           model: "llama-3.1-8b-instant",
+//           temperature: 0.1, // Keep it low so it doesn't hallucinate categories
+//           response_format: { type: "json_object" },
+//       });
+
+//       const routingData = JSON.parse(routingCompletion.choices[0].message.content);
+      
+//       // Ensure it defaults to 'Not sure' if Groq messes up
+//       const detectedCategory = routingData.category || 'Not sure'; 
+//       console.log(`🎯 Auto-Detected Category: [${detectedCategory}]`);
+
+//       // ==========================================
+//       // PHASE 1: Get the Score from Python ML
+//       // ==========================================
+//       console.log(`🤖 2. Asking Python ML Router for score...`);
+      
+//       // 🌟 Send the AUTO-DETECTED category to Flask!
+//       const flaskResponse = await axios.post('http://127.0.0.1:5000/analyze', { 
+//           message: message,
+//           category: detectedCategory 
+//       });
+      
+//       const aiResult = flaskResponse.data; 
+
+//       let numericScore = parseInt(aiResult.confidence_score.replace('%', ''), 10);
+//       if (!aiResult.is_scam) {
+//           numericScore = 100 - numericScore; 
+//       }
+
+//       let calculatedStatus = 'safe';
+//       if (aiResult.is_scam) {
+//           calculatedStatus = numericScore > 80 ? 'danger' : 'warning';
+//       }
+
+// // ==========================================
+//         // PHASE 2: Get the Explanation from Groq LLM
+//         // ==========================================
+//         console.log(`🧠 3. Asking Groq to generate reasoning...`);
+
+//         let systemPrompt = "";
+
+//         if (aiResult.is_scam) {
+//             // 🌟 THE FIX: Pass the detectedCategory to Groq and give it strict Mapping Rules!
+//             systemPrompt = `You are a cybersecurity expert. Our custom ML model classified this message as a SCAM.
+//             The routing engine has already flagged the context as: "${detectedCategory}".
+            
+//             Your job is to assign the final threat type, explain why it is dangerous, and identify manipulation tactics.
+//             You MUST output ONLY valid JSON. Do not include markdown.
+            
+//             MAPPING RULES:
+//             - If context is "Bank", you MUST choose "Financial / Bank Fraud".
+//             - If context is "OTP", you MUST choose "OTP / Verification Scam".
+//             - If context is "Digital arrest", you MUST choose "Digital Arrest / Authority Impersonation".
+//             - If context is "Not sure", read the text and choose "Fake Job / Task Scam", "Phishing / Malicious Link", or "Unknown".
+            
+//             Required JSON Structure:
+//             {
+//               "type": "Insert the EXACT string chosen from the mapping rules above",
+//               "manipulation": ["Array", "of", "strings", "max 3 tactics (e.g., 'Urgency', 'Fear', 'Authority')"],
+//               "explanation": "A 1-2 sentence explanation of why this is a threat."
+//             }`;
+//         } else {
+//             // SAFE MESSAGE RULES (Leave this exactly as it is)
+//             systemPrompt = `You are a cybersecurity expert. Our custom ML model classified this message as SAFE.
+//             Your job is to explain why this is a legitimate, normal message. DO NOT hallucinate threats.
+//             You MUST output ONLY valid JSON.
+            
+//             Required JSON Structure:
+//             {
+//               "type": "Safe Message",
+//               "manipulation": [],
+//               "explanation": "Provide a positive 1-2 sentence explanation of why this looks like a normal, safe message."
+//             }`;
+//         }
+
+//         const chatCompletion = await groq.chat.completions.create({
+//             messages: [
+//                 { role: "system", content: systemPrompt },
+//                 { role: "user", content: `Analyze this message: "${message}"` }
+//             ],
+//             model: "llama-3.1-8b-instant",
+//             temperature: 0.1, 
+//             response_format: { type: "json_object" },
+//         });
+
+//       const groqData = JSON.parse(chatCompletion.choices[0].message.content);
+
+//       // ==========================================
+//       // PHASE 3: Combine and Send to React
+//       // ==========================================
+//       const finalFrontendData = {
+//           status: calculatedStatus,          
+//           score: numericScore,               
+//           type: groqData.type,               
+//           manipulation: groqData.manipulation, 
+//           explanation: groqData.explanation,
+//           expert_used: aiResult.expert_used // Tells React which ML brain made the call
+//       };
+
+//       console.log(`✅ 4. Sending final packaged data to React:`, finalFrontendData);
+//       res.json(finalFrontendData);
+
+//   } catch (error) {
+//       console.error("🔴 Backend Error:", error.message);
+//       res.status(500).json({ error: "ScamShield servers are currently analyzing heavy traffic. Try again." });
+//   }
+// });
+
+
+// --- THE HYBRID API ROUTE (AUTO-ROUTING ENABLED & RECOVERY STEPS) ---
 app.post('/api/scan', async (req, res) => {
   try {
-      // 🌟 Remove category from req.body since we are auto-detecting it!
       const { message } = req.body;
       
       if (!message) return res.status(400).json({ error: "Message is required" });
 
-      console.log(`\n📩 1. Received message: "${message}"`);
+      console.log(`\n📩 1. Received message: "${message.substring(0, 30)}..."`);
 
       // ==========================================
       // PHASE 0: Auto-Detect Category with Groq LLM
@@ -337,13 +478,11 @@ app.post('/api/scan', async (req, res) => {
               { role: "user", content: `Message: "${message}"` }
           ],
           model: "llama-3.1-8b-instant",
-          temperature: 0.1, // Keep it low so it doesn't hallucinate categories
+          temperature: 0.1, 
           response_format: { type: "json_object" },
       });
 
       const routingData = JSON.parse(routingCompletion.choices[0].message.content);
-      
-      // Ensure it defaults to 'Not sure' if Groq messes up
       const detectedCategory = routingData.category || 'Not sure'; 
       console.log(`🎯 Auto-Detected Category: [${detectedCategory}]`);
 
@@ -352,8 +491,7 @@ app.post('/api/scan', async (req, res) => {
       // ==========================================
       console.log(`🤖 2. Asking Python ML Router for score...`);
       
-      // 🌟 Send the AUTO-DETECTED category to Flask!
-      const flaskResponse = await axios.post('http://127.0.0.1:5000/analyze', { 
+      const flaskResponse = await axios.post(`${process.env.ML_URL}/analyze`, { 
           message: message,
           category: detectedCategory 
       });
@@ -370,56 +508,58 @@ app.post('/api/scan', async (req, res) => {
           calculatedStatus = numericScore > 80 ? 'danger' : 'warning';
       }
 
-// ==========================================
-        // PHASE 2: Get the Explanation from Groq LLM
-        // ==========================================
-        console.log(`🧠 3. Asking Groq to generate reasoning...`);
+      // ==========================================
+      // PHASE 2: Get Explanation & RECOVERY STEPS from Groq
+      // ==========================================
+      console.log(`🧠 3. Asking Groq to generate reasoning and recovery steps...`);
 
-        let systemPrompt = "";
+      let systemPrompt = "";
 
-        if (aiResult.is_scam) {
-            // 🌟 THE FIX: Pass the detectedCategory to Groq and give it strict Mapping Rules!
-            systemPrompt = `You are a cybersecurity expert. Our custom ML model classified this message as a SCAM.
-            The routing engine has already flagged the context as: "${detectedCategory}".
-            
-            Your job is to assign the final threat type, explain why it is dangerous, and identify manipulation tactics.
-            You MUST output ONLY valid JSON. Do not include markdown.
-            
-            MAPPING RULES:
-            - If context is "Bank", you MUST choose "Financial / Bank Fraud".
-            - If context is "OTP", you MUST choose "OTP / Verification Scam".
-            - If context is "Digital arrest", you MUST choose "Digital Arrest / Authority Impersonation".
-            - If context is "Not sure", read the text and choose "Fake Job / Task Scam", "Phishing / Malicious Link", or "Unknown".
-            
-            Required JSON Structure:
-            {
-              "type": "Insert the EXACT string chosen from the mapping rules above",
-              "manipulation": ["Array", "of", "strings", "max 3 tactics (e.g., 'Urgency', 'Fear', 'Authority')"],
-              "explanation": "A 1-2 sentence explanation of why this is a threat."
-            }`;
-        } else {
-            // SAFE MESSAGE RULES (Leave this exactly as it is)
-            systemPrompt = `You are a cybersecurity expert. Our custom ML model classified this message as SAFE.
-            Your job is to explain why this is a legitimate, normal message. DO NOT hallucinate threats.
-            You MUST output ONLY valid JSON.
-            
-            Required JSON Structure:
-            {
-              "type": "Safe Message",
-              "manipulation": [],
-              "explanation": "Provide a positive 1-2 sentence explanation of why this looks like a normal, safe message."
-            }`;
-        }
+      if (aiResult.is_scam) {
+          // 🌟 NEW: Added "recovery_steps" to the required JSON structure!
+          systemPrompt = `You are a cybersecurity expert. Our custom ML model classified this message as a SCAM.
+          The routing engine has already flagged the context as: "${detectedCategory}".
+          
+          Your job is to assign the final threat type, explain why it is dangerous, identify manipulation tactics, and provide 3 immediate, actionable recovery/protection steps.
+          You MUST output ONLY valid JSON. Do not include markdown.
+          
+          MAPPING RULES:
+          - If context is "Bank", you MUST choose "Financial / Bank Fraud".
+          - If context is "OTP", you MUST choose "OTP / Verification Scam".
+          - If context is "Digital arrest", you MUST choose "Digital Arrest / Authority Impersonation".
+          - If context is "Not sure", read the text and choose "Fake Job / Task Scam", "Phishing / Malicious Link", or "Unknown".
+          
+          Required JSON Structure:
+          {
+            "type": "Insert the EXACT string chosen from the mapping rules above",
+            "manipulation": ["Array", "of", "strings", "max 3 tactics (e.g., 'Urgency', 'Fear', 'Authority')"],
+            "explanation": "A 1-2 sentence explanation of why this is a threat.",
+            "recovery_steps": ["Step 1 (e.g., Do not click the link)", "Step 2 (e.g., Block the sender)", "Step 3 (e.g., Report to 1930)"]
+          }`;
+      } else {
+          // SAFE MESSAGE RULES (Added an empty recovery_steps array to prevent React crashes)
+          systemPrompt = `You are a cybersecurity expert. Our custom ML model classified this message as SAFE.
+          Your job is to explain why this is a legitimate, normal message. DO NOT hallucinate threats.
+          You MUST output ONLY valid JSON.
+          
+          Required JSON Structure:
+          {
+            "type": "Safe Message",
+            "manipulation": [],
+            "explanation": "Provide a positive 1-2 sentence explanation of why this looks like a normal, safe message.",
+            "recovery_steps": []
+          }`;
+      }
 
-        const chatCompletion = await groq.chat.completions.create({
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: `Analyze this message: "${message}"` }
-            ],
-            model: "llama-3.1-8b-instant",
-            temperature: 0.1, 
-            response_format: { type: "json_object" },
-        });
+      const chatCompletion = await groq.chat.completions.create({
+          messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: `Analyze this message: "${message}"` }
+          ],
+          model: "llama-3.1-8b-instant",
+          temperature: 0.1, 
+          response_format: { type: "json_object" },
+      });
 
       const groqData = JSON.parse(chatCompletion.choices[0].message.content);
 
@@ -432,10 +572,11 @@ app.post('/api/scan', async (req, res) => {
           type: groqData.type,               
           manipulation: groqData.manipulation, 
           explanation: groqData.explanation,
-          expert_used: aiResult.expert_used // Tells React which ML brain made the call
+          recovery_steps: groqData.recovery_steps, // 🌟 NEW: Pass the steps to React!
+          expert_used: aiResult.expert_used 
       };
 
-      console.log(`✅ 4. Sending final packaged data to React:`, finalFrontendData);
+      console.log(`✅ 4. Sending final packaged data to React.`);
       res.json(finalFrontendData);
 
   } catch (error) {
@@ -472,7 +613,7 @@ app.post('/api/scan-image', upload.single('scamImage'), async (req, res) => {
     // PHASE 1: Python ML Model (General Pipeline)
     // ==========================================
     console.log(`🤖 3. Asking Python ML model for score...`);
-    const flaskResponse = await axios.post('http://127.0.0.1:5000/analyze', { 
+    const flaskResponse = await axios.post(`${process.env.ML_URL}/analyze`, { 
       message: extractedText,
       category: 'Not sure' // 🌟 FORCES Flask to use the general overall scam model!
     });
@@ -787,10 +928,6 @@ Required JSON Structure:
 //   }
 // });
 
-
-// ==========================================
-// PRE-SCAM AI INVESTIGATOR (HELP DESK)
-// ==========================================
 // ==========================================
 // PRE-SCAM AI INVESTIGATOR (HELP DESK)
 // ==========================================
@@ -823,10 +960,9 @@ app.post('/api/chat/pre-scam', async (req, res) => {
     });
 
     // 4. FETCH CONTEXT (Memory Management)
-    // We fetch 11 to get the message we just saved + 10 history points
     const rawHistory = await Chat.find({ user_id: userId, type: 'pre' })
       .sort({ createdAt: -1 }) // Get newest messages first
-      .limit(11); 
+      .limit(11); // Fetch user's message + history
 
     // IMPORTANT: Reverse the array so it's in chronological order for the AI
     const chronologicalHistory = rawHistory.reverse();
@@ -837,17 +973,16 @@ app.post('/api/chat/pre-scam', async (req, res) => {
       content: chat.message || ""
     }));
 
-    // 6. INJECT SYSTEM PROMPT AT THE START
+    // 6. INJECT STRICT SYSTEM PROMPT
     const systemPrompt = {
       role: 'system',
-      content: `You are an elite Pre-Scam Investigator for ScamShieldAI. 
-      Your job is to analyze suspicious emails, text messages, links, or phone calls the user shares.
+      content: `You are an elite Pre-Scam Investigator for ScamShieldAI. Your SOLE job is to analyze suspicious emails, text messages, links, or phone calls shared by the user to determine if they are scams.
       
-      Rules:
-      - Be highly analytical, sharp, and direct.
-      - Point out specific "red flags" (e.g., urgency, weird domains, asking for OTPs).
-      - Do not provide post-scam damage control here. Focus purely on prevention and analysis.
-      - Keep responses concise and formatted with short paragraphs or bullet points.`
+      STRICT OPERATING RULES:
+      1. Topic Locking: You MUST only answer questions related to analyzing potential scam threats.
+      2. Refusal: If the user asks about ANYTHING else (general knowledge, coding, weather, or requests for recovery help after being scammed), you MUST politely refuse. Tell them you are specialized in analyzing new threats.
+      3. No Damage Control: Do not provide recovery instructions here. Focus purely on prevention and analysis.
+      4. Tone & Style: Be highly analytical, direct, concise, and format with bullet points.`
     };
     
     groqMessages.unshift(systemPrompt);
@@ -858,7 +993,7 @@ app.post('/api/chat/pre-scam', async (req, res) => {
     const chatCompletion = await groq.chat.completions.create({
       messages: groqMessages,
       model: "llama-3.1-8b-instant",
-      temperature: 0.4, 
+      temperature: 0.3, // Lower temp for more strict adherence to prompts
       max_tokens: 1000 
     });
 
@@ -890,6 +1025,8 @@ app.post('/api/chat/pre-scam', async (req, res) => {
     res.status(500).json({ error: "The Investigator is currently offline. Please try again." });
   }
 });
+
+
 // ==========================================
 // AI HELP DESK - POST-SCAM RECOVERY SUPPORT
 // ==========================================
@@ -904,75 +1041,89 @@ app.post('/api/chat/post-scam', async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.id;
 
-    const { message } = req.body;
-    if (!message) {
+    // VALIDATE INCOMING MESSAGE
+    const rawMessage = req.body.message;
+    if (!rawMessage) {
       return res.status(400).json({ error: "Message cannot be empty." });
     }
+    const safeUserMessage = String(rawMessage).trim();
 
     console.log(`\n🛡️ [Post-Scam Bot] Processing crisis message from user: ${userId}`);
 
-    // 2. Save user message to database
+    // 2. Save user message to database FIRST
     await Chat.create({
       user_id: userId,
       role: 'user',
-      message: message,
-      type: 'post' // <-- ADD THIS
+      message: safeUserMessage,
+      type: 'post' 
     });
 
-    // 3. Fetch chat history
-    const chatHistory = await Chat.find({ user_id: userId, type: 'post' }) // <-- FILTER HERE
-      .sort({ createdAt: 1 })
-      .limit(10);
+    // 3. FETCH CONTEXT (Memory Management) - FIXED: Now fetches newest, reverse
+    const rawHistory = await Chat.find({ user_id: userId, type: 'post' }) 
+      .sort({ createdAt: -1 }) // Get newest first
+      .limit(11);
 
-    // 4. Format history for Groq
-    const groqMessages = chatHistory.map(chat => ({
+    // IMPORTANT: Reverse the array so it's in chronological order for the AI
+    const chronologicalHistory = rawHistory.reverse();
+
+    // 4. FORMAT FOR GROQ
+    const groqMessages = chronologicalHistory.map(chat => ({
       role: chat.role === 'ai' ? 'assistant' : chat.role,
-      content: chat.message
+      content: chat.message || ""
     }));
 
-    // 5. THE POST-SCAM SYSTEM PROMPT (Empathetic & Action-Oriented)
+    // 5. THE POST-SCAM SYSTEM PROMPT (Empathetic, Action-Oriented & STRICT Topic Locking)
     const systemPrompt = {
       role: 'system',
-      content: `You are an empathetic Victim Support and Crisis Management Advisor for ScamShieldAI. 
-      The user talking to you has likely just been scammed, lost money, or had their identity compromised. They may be panicked or distressed.
+      content: `You are an empathetic Victim Support and Crisis Management Advisor for ScamShieldAI. The user talking to you has likely just been scammed, lost money, or had their identity compromised. They are in distress.
       
-      Rules:
-      1. Tone: Be deeply empathetic, calming, and reassuring. Start by letting them know it is not their fault and you are here to help.
-      2. Action: Provide immediate, step-by-step damage control instructions (e.g., freezing bank accounts, changing passwords).
-      3. Reporting: Advise them to document the evidence (screenshots) and report the incident to the National Cyber Crime Reporting Portal (cybercrime.gov.in) or by dialing the 1930 helpline.
-      4. Formatting: Use clear bullet points and bold text to make your instructions easy to read in a crisis.`
+      STRICT OPERATING RULES:
+      1. Tone: Deeply empathetic, calming, and reassuring. Let them know it is not their fault.
+      2. Action: Provide immediate, step-by-step damage control (freezing bank accounts, changing passwords). Advise them to document evidence and report to the National Cyber Crime Portal (cybercrime.gov.in) or dial 1930 helpline.
+      3. Topic Locking: You MUST only answer questions related to scam recovery support and crisis management.
+      4. Refusal (Pre-Scam): If the user asks you to analyze a *new* suspicious message to see if it's a scam (pre-scam), politely refuse. Tell them you only handle recovery. Direct them to switch to 'Analysis' mode in the Help Desk or use the 'Live Text Scanner'.
+      5. Other Topics: Refuse to answer any topics unrelated to scam recovery.
+      6. Formatting: Use clear bold text and bullet points.`
     };
     
     groqMessages.unshift(systemPrompt);
 
-    // 6. Call Groq LLM (Higher temperature for more natural, empathetic language)
+    // 6. Call Groq LLM (Slightly higher temperature for empathy, max_tokens for safety)
     const chatCompletion = await groq.chat.completions.create({
       messages: groqMessages,
       model: "llama-3.1-8b-instant",
       temperature: 0.6, 
+      max_tokens: 1000 
     });
 
-    const aiResponse = chatCompletion.choices[0].message.content;
+    // Extract response and handle empty cases
+    const aiResponse = chatCompletion.choices[0].message?.content;
+    
+    if (!aiResponse) {
+        console.error("🔴 Post-Scam support returned an empty response.");
+        return res.status(500).json({ error: "The Support Advisor is silent. Please try again." });
+    }
+
+    const safeAiResponse = String(aiResponse).trim();
 
     // 7. Save AI response to database
     await Chat.create({
       user_id: userId,
       role: 'ai',
-      message: aiResponse,
+      message: safeAiResponse,
        type: 'post'
     });
 
     console.log(`✅ [Post-Scam Bot] Replied successfully with recovery steps.`);
     
     // 8. Send response to React
-    res.json({ reply: aiResponse });
+    res.json({ reply: safeAiResponse });
 
   } catch (error) {
     console.error("🔴 Post-Scam Chat Error:", error.message);
     res.status(500).json({ error: "The Support Advisor is currently offline. Please try again." });
   }
 });
-
 
 // ==========================================
 // GET USER CHAT HISTORY
@@ -1238,7 +1389,7 @@ app.post('/api/admin/verify-pending', async (req, res) => {
         const newTrainingData = await TempDataset.find();
         
         // Send data to Python Flask router
-        await axios.post('http://127.0.0.1:5000/retrain', {
+        await axios.post(`${process.env.ML_URL}/retrain`, {
           data: newTrainingData
         });
 
@@ -1337,5 +1488,147 @@ app.post('/api/admin/phish-user', async (req, res) => {
   }
 });
 
+// ==========================================
+// SCAMSHIELD CORE: AI ORCHESTRATION ROUTER
+// ==========================================
+app.post('/api/analyze-sms', async (req, res) => {
+  try {
+      const { message, sender } = req.body;
+      if (!message) return res.status(400).json({ error: "No message text provided." });
+
+      console.log(`\n🕵️ Interceptor processing SMS from: ${sender}`);
+      console.log(`💬 Content: "${message.substring(0, 50)}..."`);
+
+      // ==========================================
+      // 🌟 PHASE 1: ORCHESTRATION (Groq LLM)
+      // Detect intent to route to correct specialized ML model.
+      // ==========================================
+      const orchestrationPrompt = `You are the primary orchestration node for ScamShieldAI. 
+      Read the incoming SMS message and classify it into EXACTLY ONE of these specialized categories for routing to the correct expert ML model.
+      
+      Available Expert Models:
+      - 'Bank' (For financial fraud, KYC updates, account blocking)
+      - 'OTP' (For one-time-password phishing)
+      - 'Digital arrest' (For CBI/Police impersonation threats)
+      - 'General' (For everything else: lottery, jobs, package delivery, safe messages)
+
+      Analyze based on keywords AND semantic context.
+
+      You MUST output ONLY valid JSON in this format, with no extra text:
+      { "category_mapped": "Exact Category Name" }`;
+
+      const chatCompletion = await groq.chat.completions.create({
+          messages: [
+              { role: 'system', content: orchestrationPrompt },
+              { role: 'user', content: `Sender: ${sender}\nMessage: ${message}` }
+          ],
+          model: "llama-3.1-8b-instant",
+          temperature: 0.1, // Keep it deterministic
+          response_format: { type: "json_object" } // Force JSON output
+      });
+
+      // 🌟 Parse Groq's Routing Decision
+      const routingDecision = JSON.parse(chatCompletion.choices[0].message.content);
+      const modelType = routingDecision.category_mapped; // e.g. 'Bank'
+
+      console.log(`🎯 Groq Orchestra routed to Expert Model: [${modelType}]`);
+
+
+      // ==========================================
+      // 🌟 PHASE 2: EXECUTION (Call Python Server)
+      // Dynamically build the URL based on Groq's decision.
+      // ==========================================
+      let pythonUrl = `${process.env.ML_URL}/predict/general`; // Default fallback
+
+      // Map Groq decision to Python URLs
+      if (modelType === 'Bank') pythonUrl = 'http://127.0.0.1:5000/predict/bank';
+      else if (modelType === 'OTP') pythonUrl = 'http://127.0.0.1:5000/predict/otp';
+      else if (modelType === 'Digital arrest') pythonUrl = 'http://127.0.0.1:5000/predict/da';
+
+      console.log(`🚀 Dispatching text to Python expert at: ${pythonUrl}`);
+
+      // Call the specific Python Flask model endpoint
+      const mlResponse = await axios.post(pythonUrl, { message: message });
+      const mlData = mlResponse.data;
+
+      // 🌟 FIXED: Using ml_score based on Python's exact response structure
+      console.log(`✅ Python Expert returned score: ${mlData.ml_score * 100}%`);
+
+
+      // ==========================================
+      // 🌟 PHASE 3: RESPONSE (Back to React)
+      // ==========================================
+      res.json({
+          original_message: message,
+          category_mapped: modelType, // Groq's decision (Bank, OTP, etc)
+          ml_label: mlData.ml_label,  // 🌟 FIXED: Correct property name
+          ml_score: Math.round(mlData.ml_score * 100) // 🌟 FIXED: Correct property name
+      });
+
+  } catch (error) {
+      console.error("\n🔴 Interceptor Routing Error:");
+      console.error(error.message);
+      
+      // Detailed error for debugging during hackathon
+      res.status(500).json({ 
+          error: "ScamShieldAI Core Error", 
+          details: error.message,
+          step: error.config?.url ? 'Python call failed' : 'Groq/Node logic failed'
+      });
+  }
+});
+
+// ==========================================
+// DASHBOARD: DYNAMIC THREAT INTELLIGENCE (Groq Only)
+// ==========================================
+app.get('/api/dashboard/overview', async (req, res) => {
+  try {
+      console.log(`\n📊 Fetching dynamic Live Feed & Trends from Groq...`);
+
+      const systemPrompt = `You are the core Threat Intelligence Engine for ScamShieldAI. 
+      Your job is to generate a realistic, real-time snapshot of current cybercrime activity in India for a security dashboard.
+      
+      RULES:
+      1. Make the threats sound highly technical and realistic (e.g., "Voice call intercepted matching CBI impersonation patterns", "Suspicious APK payload detected").
+      2. Ensure the percentages in the 'trends' array add up to exactly 100.
+      
+      You MUST output ONLY valid JSON in this exact structure:
+      {
+        "liveFeed": [
+          { 
+            "risk": "High" or "Medium", 
+            "title": "Short Threat Title", 
+            "desc": "1 sentence description of the intercepted threat", 
+            "time": "e.g., 'Just now', '2m ago', '15m ago'" 
+          }
+          // Generate EXACTLY 3 feed items
+        ],
+        "trends": [
+          { 
+            "name": "Category Name (e.g., Financial/OTP Phishing)", 
+            "percentage": Number (e.g., 45) 
+          }
+          // Generate EXACTLY 4 categories
+        ]
+      }`;
+
+      const chatCompletion = await groq.chat.completions.create({
+          messages: [{ role: "system", content: systemPrompt }],
+          model: "llama-3.1-8b-instant",
+          temperature: 0.8, // Slightly higher so it generates fresh scenarios on every refresh
+          response_format: { type: "json_object" }
+      });
+
+      // Parse Groq's JSON string into a real JavaScript object
+      const dashboardData = JSON.parse(chatCompletion.choices[0].message.content);
+      
+      console.log(`✅ Dynamic dashboard data generated successfully.`);
+      res.json(dashboardData);
+
+  } catch (error) {
+      console.error("🔴 Dashboard Intelligence Error:", error.message);
+      res.status(500).json({ error: "Failed to generate dynamic dashboard data." });
+  }
+});
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`🚀 Node.js Gateway running on http://localhost:${PORT}`));

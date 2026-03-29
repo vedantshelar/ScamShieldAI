@@ -16,7 +16,7 @@ export default function AdminDatabase() {
   const fetchReports = async () => {
     try {
       // Assuming you have a GET route to fetch all reports for the admin
-      const response = await axios.get('http://localhost:4000/api/admin/reports', {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/reports`, {
         withCredentials: true
       });
       console.log('data : ',response)
@@ -60,7 +60,7 @@ export default function AdminDatabase() {
 
     try {
       // Calls the Node.js route we just built!
-      const response = await axios.post('http://localhost:4000/api/admin/verify-pending', {}, {
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/admin/verify-pending`, {}, {
         withCredentials: true 
       });
 

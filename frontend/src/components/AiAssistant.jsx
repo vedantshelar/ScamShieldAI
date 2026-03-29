@@ -39,7 +39,7 @@ export default function AiAssistant() {
     const fetchChatHistory = async () => {
       try {
         // 🌟 Add ?type=${mode} to the URL so Node knows which tab is active!
-        const response = await axios.get(`http://localhost:4000/api/chat/history?type=${mode}`, {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/chat/history?type=${mode}`, {
           withCredentials: true 
         });
 
@@ -80,7 +80,7 @@ export default function AiAssistant() {
     try {
       if (mode === 'pre') {
         const response = await axios.post(
-          'http://localhost:4000/api/chat/pre-scam',
+          `${import.meta.env.VITE_BACKEND_URL}/api/chat/pre-scam`,
           { message: text },
           { withCredentials: true } 
         );
@@ -90,7 +90,7 @@ export default function AiAssistant() {
       } else {
         // --- REAL BACKEND CONNECTION FOR POST-SCAM ---
         const response = await axios.post(
-          'http://localhost:4000/api/chat/post-scam',
+          `${import.meta.env.VITE_BACKEND_URL}/api/chat/post-scam`,
           { message: text },
           { withCredentials: true } 
         );

@@ -22,7 +22,7 @@ export default function ScamQuiz() {
       setIsLoading(true);
       setError(null);
       
-      const response = await axios.get('http://localhost:4000/api/quiz/generate', {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/quiz/generate`, {
         withCredentials: true // CRITICAL: Ensure the user is logged in
       });
       

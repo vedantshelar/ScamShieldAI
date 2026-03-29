@@ -1,81 +1,88 @@
 // src/components/SmsSimulator.jsx
 import React, { useState, useRef } from 'react';
-import { FiMessageSquare, FiShield, FiAlertTriangle, FiCheckCircle, FiSend } from 'react-icons/fi';
+import axios from 'axios'; 
+import { FiMessageSquare, FiShield, FiAlertTriangle, FiCheckCircle, FiSend, FiLoader } from 'react-icons/fi';
 import styles from './SmsSimulator.module.css';
 
 export default function SmsSimulator() {
   const [activeSms, setActiveSms] = useState(null);
-  const [interceptionState, setInterceptionState] = useState('idle'); // idle, analyzing, blocked, safe
+  const [interceptionState, setInterceptionState] = useState('idle'); 
+  const [aiResult, setAiResult] = useState({ threatType: '', score: 0 });
 
-  // Create an Audio object reference using a free alarm sound URL
-  // You can replace this URL with a local file path like '/alert.mp3' if you put a file in your public folder
   const alertSound = useRef(new Audio('/smsalert.mp3'));
   
   const demoScenarios = [
     {
       id: 1,
       sender: "HDFC-ALERT",
-      text: "Dear User, your HDFC bank account will be blocked today due to pending PAN KYC. Update immediately via: http://hdfc-kyc-update.net.in",
-      isScam: true,
-      threatType: "Phishing / Malicious Link",
-      score: 98
+      text: "Dear User, your bank account is blocked due to pending PAN KYC. Update immediately at: http://hdfc-kyc.net",
     },
     {
       id: 2,
-      sender: "Unknown (+91 87654 32109)",
-      text: "You have won a cash prize of ₹25,000 from KBC! Send registration fee of ₹999 via UPI to claim your prize.",
-      isScam: true,
-      threatType: "Advance Fee Fraud",
-      score: 85
+      sender: "Unknown (+91 8765432109)",
+      text: "KBC Lucky Draw! You have won ₹25,00,000. To claim prize, call standard officer Vikram Singh immediately.",
     },
     {
       id: 3,
-      sender: "Mom",
-      text: "Can you pick up some groceries on your way back from college?",
-      isScam: false,
-      threatType: "Safe",
-      score: 2
+      sender: "IRCTC-SMS",
+      text: "Your ticket for Train 12951 (MMCT-NDLS) is confirmed. Coach A1, Berth 32. Enjoy your journey.",
     }
   ];
 
-  const triggerSms = (scenario) => {
+  const triggerSms = async (scenario) => {
     setActiveSms(scenario);
+    setAiResult({ threatType: '', score: 0 });
     setInterceptionState('idle');
 
-    // Reset the audio just in case it was playing previously
     alertSound.current.pause();
     alertSound.current.currentTime = 0;
 
-    // Step 1: SMS arrives
-    setTimeout(() => {
+    setTimeout(async () => {
       setInterceptionState('analyzing');
-      
-      // Step 2: ScamShieldAI intercepts
-      setTimeout(() => {
-        if (scenario.isScam) {
+      console.log(`📡 Sending message to Neural Net for analysis...`);
+
+      try {
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/analyze-sms`, {
+          sender: scenario.sender,
+          message: scenario.text
+        }, { withCredentials: true });
+
+        const data = response.data;
+        console.log("✅ AI Analysis Received:", data);
+
+        setAiResult({
+            threatType: data.category_mapped, 
+            score: data.ml_score 
+        });
+
+        if (data.ml_label === 1) {
           setInterceptionState('blocked');
           
-          // PLAY THE ALARM SOUND
-          alertSound.current.play().catch(err => console.log("Audio prevented by browser:", err));
+          alertSound.current.play().catch(err => console.log("Audio error:", err));
           
-          // Force stop the sound after 2 seconds
           setTimeout(() => {
             alertSound.current.pause();
             alertSound.current.currentTime = 0;
-          }, 2000);
+          }, 3000);
 
         } else {
           setInterceptionState('safe');
-          setTimeout(() => resetSimulator(), 4000);
+          setTimeout(() => resetSimulator(), 5000);
         }
-      }, 1200); 
-    }, 500);
+
+      } catch (error) {
+        console.error("🔴 Connection Error to ScamShield Core:", error);
+        setInterceptionState('safe'); 
+        setAiResult({ threatType: 'Error: Shield Offline', score: 0 });
+      }
+
+    }, 800);
   };
 
   const resetSimulator = () => {
     setActiveSms(null);
     setInterceptionState('idle');
-    // Ensure sound stops if they click reset early
+    setAiResult({ threatType: '', score: 0 });
     alertSound.current.pause();
     alertSound.current.currentTime = 0;
   };
@@ -103,16 +110,19 @@ export default function SmsSimulator() {
                 key={scenario.id}
                 className={styles.scenarioButton}
                 onClick={() => triggerSms(scenario)}
-                disabled={activeSms !== null && interceptionState !== 'safe'}
+                disabled={interceptionState === 'analyzing'}
               >
                 <div className={styles.btnIcon}>
-                  {scenario.isScam ? <FiAlertTriangle className={styles.redIcon}/> : <FiMessageSquare className={styles.blueIcon}/>}
+                    <FiMessageSquare className={styles.blueIcon}/>
                 </div>
                 <div className={styles.btnText}>
                   <strong>{scenario.sender}</strong>
-                  <span>{scenario.threatType} Demo</span>
+                  <span>{scenario.text.substring(0, 30)}...</span>
                 </div>
-                <FiSend className={styles.sendIcon} />
+                {interceptionState === 'analyzing' && activeSms?.id === scenario.id ? 
+                    <FiLoader className={styles.spinIcon} /> :
+                    <FiSend className={styles.sendIcon} />
+                }
               </button>
             ))}
           </div>
@@ -136,15 +146,35 @@ export default function SmsSimulator() {
                 </div>
               </div>
 
-              {/* Incoming SMS Notification Toast */}
+              {/* 🌟 UPDATED: Incoming SMS Notification Toast (Turns RED on block) */}
               {activeSms && (
-                <div className={`${styles.notificationToast} ${interceptionState === 'analyzing' ? styles.toastScanning : ''}`}>
+                <div 
+                  className={`${styles.notificationToast} ${interceptionState === 'analyzing' ? styles.toastScanning : ''}`}
+                  style={interceptionState === 'blocked' ? { 
+                    borderLeft: '4px solid #ef4444', 
+                    backgroundColor: '#fef2f2',
+                    borderColor: '#fca5a5'
+                  } : {}}
+                >
                   <div className={styles.toastHeader}>
-                    <FiMessageSquare className={styles.toastIcon} />
-                    <span>{activeSms.sender}</span>
-                    <small>Now</small>
+                    {/* Icon turns red */}
+                    {interceptionState === 'blocked' ? 
+                      <FiAlertTriangle style={{ color: '#ef4444', fontSize: '1.2rem' }} /> : 
+                      <FiMessageSquare className={styles.toastIcon} />
+                    }
+                    {/* Sender text turns red */}
+                    <span style={interceptionState === 'blocked' ? { color: '#ef4444', fontWeight: 'bold' } : {}}>
+                      {activeSms.sender}
+                    </span>
+                    <small style={interceptionState === 'blocked' ? { color: '#ef4444' } : {}}>Now</small>
                   </div>
-                  <p className={styles.toastBody}>{activeSms.text}</p>
+                  {/* Body text turns dark red */}
+                  <p 
+                    className={styles.toastBody} 
+                    style={interceptionState === 'blocked' ? { color: '#991b1b', fontWeight: '500' } : {}}
+                  >
+                    {activeSms.text}
+                  </p>
                   
                   {interceptionState === 'analyzing' && (
                     <div className={styles.laserScanner}></div>
@@ -161,25 +191,26 @@ export default function SmsSimulator() {
                     </div>
                     <h2>THREAT BLOCKED</h2>
                     <div className={styles.threatDetails}>
-                      <p><strong>Type:</strong> {activeSms.threatType}</p>
-                      <p><strong>Risk Score:</strong> {activeSms.score}%</p>
+                      <p><strong>Detected As:</strong> {aiResult.threatType}</p>
+                      <p><strong>Neural Score:</strong> {aiResult.score}%</p>
                     </div>
-                    <p className={styles.warningText}>ScamShieldAI has isolated this malicious notification. Do not click any links.</p>
-                    <button className={styles.dismissBtn} onClick={resetSimulator}>Dismiss & Delete</button>
+                    <p className={styles.warningText}>ScamShieldAI has isolated this malicious notification. Background activity suspended.</p>
+                    <button className={styles.dismissBtn} onClick={resetSimulator}>Dismiss</button>
                   </div>
                 </div>
               )}
 
+              {/* Safe Overlay */}
               {interceptionState === 'safe' && (
                 <div className={styles.safeOverlay}>
                   <FiCheckCircle className={styles.safeIcon} />
-                  <p>Message verified safe.</p>
+                  <p>{aiResult.threatType === '' ? 'Message verified safe.' : `${aiResult.threatType} check passed.`}</p>
                 </div>
               )}
 
             </div>
           </div>
-        </div>
+        </div> 
 
       </div>
     </div>
