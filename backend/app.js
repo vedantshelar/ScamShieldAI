@@ -124,7 +124,7 @@ app.post('/api/auth/signup', async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true, // React cannot read this (Prevents XSS)
       secure: process.env.NODE_ENV === 'production', // Only true if using HTTPS
-      sameSite: 'lax', // Protects against CSRF attacks
+      sameSite: 'none', // Protects against CSRF attacks
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
     });
 
@@ -181,7 +181,7 @@ app.post('/api/auth/login', async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true, // Prevents XSS attacks in React
       secure: process.env.NODE_ENV === 'production', 
-      sameSite: 'lax', 
+      sameSite: 'none', 
       maxAge: 7 * 24 * 60 * 60 * 1000 // Cookie lasts for 7 days
     });
 
@@ -212,7 +212,7 @@ app.post('/api/auth/logout', (req, res) => {
     res.clearCookie('token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      sameSite: 'none'
     });
 
     console.log(`👋 User logged out successfully.`);
