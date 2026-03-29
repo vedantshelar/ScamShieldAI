@@ -1,6 +1,7 @@
 // src/components/ScamQuiz.jsx
-import React, { useState } from 'react';
-import { FiPlay, FiAward, FiCheckCircle, FiXCircle, FiChevronRight, FiShield } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios'; // 🌟 1. Import Axios
+import { FiPlay, FiAward, FiCheckCircle, FiXCircle, FiChevronRight, FiShield, FiLoader } from 'react-icons/fi';
 import styles from './ScamQuiz.module.css';
 
 export default function ScamQuiz() {
@@ -10,42 +11,34 @@ export default function ScamQuiz() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [showExplanation, setShowExplanation] = useState(false);
 
-  // Gamified Quiz Data
-  const questions = [
-    {
-      type: "sms",
-      scenario: "You receive a WhatsApp message from an unknown number: 'HR Dept: Your profile is shortlisted for a part-time job. Earn ₹5,000 daily. Click here to register: http://job-portal-vip.com'",
-      options: [
-        "Click the link to see if the job is real.",
-        "Reply asking for the company name.",
-        "Block and report the number immediately."
-      ],
-      correctAnswer: 2,
-      explanation: "This is a classic 'Task Scam'. Scammers lure you with high daily returns for easy work, eventually asking you to pay a 'registration fee' or stealing your banking details via the fake link."
-    },
-    {
-      type: "call",
-      scenario: "You get a call from someone claiming to be from the CBI. They say your Aadhaar card was found in a money laundering bust and demand you stay on a Skype video call.",
-      options: [
-        "Stay on the call to prove your innocence.",
-        "Hang up and dial 1930 to report the threat.",
-        "Pay the 'security deposit' they ask for to avoid arrest."
-      ],
-      correctAnswer: 1,
-      explanation: "This is a 'Digital Arrest' scam. Real law enforcement will never interrogate you over Skype or ask for money to clear your name. Hang up immediately and report it."
-    },
-    {
-      type: "email",
-      scenario: "An email from 'Netflix Support' says your account is suspended. The email address is 'support-team@netflix-billing-update.info'.",
-      options: [
-        "Click the link and update your credit card.",
-        "Ignore the email, it's clearly a phishing attempt.",
-        "Forward the email to your friends to warn them."
-      ],
-      correctAnswer: 1,
-      explanation: "Always check the sender's email address! Official companies use their primary domain (e.g., @netflix.com). Complex domains like 'netflix-billing-update.info' are always phishing attempts."
+  // 🌟 2. New State for API Data
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // 🌟 3. Fetch Questions Function
+  const fetchQuizData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await axios.get('http://localhost:4000/api/quiz/generate', {
+        withCredentials: true // CRITICAL: Ensure the user is logged in
+      });
+      
+      setQuestions(response.data);
+      setIsLoading(false);
+    } catch (err) {
+      console.error("Failed to load quiz:", err);
+      setError("Failed to generate the training module. Please check your connection.");
+      setIsLoading(false);
     }
-  ];
+  };
+
+  // 🌟 4. Fetch exactly once when the component mounts
+  useEffect(() => {
+    fetchQuizData();
+  }, []);
 
   const handleStart = () => {
     setGameState('playing');
@@ -56,10 +49,11 @@ export default function ScamQuiz() {
   };
 
   const handleSelectOption = (index) => {
-    if (showExplanation) return; // Prevent changing answer after submission
+    if (showExplanation) return; 
     setSelectedOption(index);
     setShowExplanation(true);
     
+    // We assume the AI correctly maps the answer to 0, 1, or 2
     if (index === questions[currentQuestion].correctAnswer) {
       setScore(score + 100);
     }
@@ -75,6 +69,12 @@ export default function ScamQuiz() {
     }
   };
 
+  // 🌟 5. Play Again triggers a brand new AI generation!
+  const handlePlayAgain = () => {
+    setGameState('start');
+    fetchQuizData(); // Fetch 10 completely new questions
+  };
+
   return (
     <div className={styles.container}>
       
@@ -85,8 +85,29 @@ export default function ScamQuiz() {
 
       <div className={styles.gameArea}>
         
+        {/* --- LOADING SCREEN --- */}
+        {isLoading && (
+          <div className={styles.startScreen} style={{ padding: '4rem 2rem' }}>
+            <FiLoader className={styles.heroIcon} style={{ animation: 'spin 2s linear infinite' }} />
+            <h3>Generating Threat Simulation...</h3>
+            <p>Our AI is analyzing the latest global cyber threats to build your personalized quiz.</p>
+          </div>
+        )}
+
+        {/* --- ERROR SCREEN --- */}
+        {error && !isLoading && (
+          <div className={styles.startScreen}>
+            <FiXCircle className={styles.heroIcon} style={{ color: '#ef4444' }} />
+            <h3>Connection Error</h3>
+            <p>{error}</p>
+            <button className={styles.primaryBtn} onClick={fetchQuizData}>
+              Try Again
+            </button>
+          </div>
+        )}
+
         {/* --- START SCREEN --- */}
-        {gameState === 'start' && (
+        {gameState === 'start' && !isLoading && !error && (
           <div className={styles.startScreen}>
             <div className={styles.shieldWrapper}>
               <FiShield className={styles.heroIcon} />
@@ -100,7 +121,7 @@ export default function ScamQuiz() {
         )}
 
         {/* --- PLAYING SCREEN --- */}
-        {gameState === 'playing' && (
+        {gameState === 'playing' && questions.length > 0 && (
           <div className={styles.quizScreen}>
             
             <div className={styles.progressHeader}>
@@ -111,7 +132,7 @@ export default function ScamQuiz() {
             <div className={styles.progressBar}>
               <div 
                 className={styles.progressFill} 
-                style={{ width: `${((currentQuestion) / questions.length) * 100}%` }}
+                style={{ width: `${((currentQuestion) / questions.length) * 100}%`, transition: 'width 0.3s ease' }}
               ></div>
             </div>
 
@@ -177,12 +198,14 @@ export default function ScamQuiz() {
             </div>
             
             <p className={styles.resultMessage}>
-              {score === 300 ? "Flawless! You are a master at spotting scams." : 
-               score >= 100 ? "Good effort! But scammers are tricky. Keep training." : 
+              {/* 🌟 6. Adjusted score thresholds for 10 questions */}
+              {score === 1000 ? "Flawless! You are a master at spotting scams." : 
+               score >= 700 ? "Good effort! But scammers are tricky. Keep training." : 
                "You are at high risk! Please review the Recovery Hub to secure your accounts."}
             </p>
 
-            <button className={styles.primaryBtn} onClick={handleStart}>
+            {/* Play Again fetches new questions! */}
+            <button className={styles.primaryBtn} onClick={handlePlayAgain}>
               Play Again
             </button>
           </div>

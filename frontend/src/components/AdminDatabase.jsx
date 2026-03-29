@@ -1,67 +1,99 @@
 // src/components/AdminDatabase.jsx
-import React, { useState } from 'react';
-import { FiSearch, FiFilter, FiCheckCircle, FiXCircle, FiUser, FiPhone, FiDatabase, FiCpu } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { FiSearch, FiFilter, FiCheckCircle, FiXCircle, FiUser, FiPhone, FiDatabase, FiCpu, FiAlertCircle } from 'react-icons/fi';
 import styles from './AdminDatabase.module.css';
 
 export default function AdminDatabase() {
-  // Mock data representing submissions from the Recovery Hub
-  const [reports, setReports] = useState([
-    {
-      id: "RPT-8842",
-      user: "Rahul Sharma",
-      mobile: "+91 98765 43210",
-      type: "financial",
-      details: "UPI: fake-customs@ybl",
-      desc: "They called claiming my FedEx package was seized and demanded ₹4999 via UPI.",
-      date: "Today, 10:45 AM",
-      status: "pending"
-    },
-    {
-      id: "RPT-8841",
-      user: "Priya Desai",
-      mobile: "+91 87654 32109",
-      type: "phishing",
-      details: "http://hdfc-kyc-update.net.in",
-      desc: "Received SMS saying my bank account would be blocked if I didn't update PAN.",
-      date: "Today, 09:15 AM",
-      status: "verified"
-    },
-    {
-      id: "RPT-8840",
-      user: "Amit Kumar",
-      mobile: "+91 76543 21098",
-      type: "job",
-      details: "wa.me/918888888888",
-      desc: "WhatsApp message offering ₹5000/day for liking YouTube videos.",
-      date: "Yesterday, 04:30 PM",
-      status: "verified"
-    },
-    {
-      id: "RPT-8839",
-      user: "Neha Singh",
-      mobile: "+91 65432 10987",
-      type: "impersonation",
-      details: "+91 99999 00000",
-      desc: "Caller pretended to be CBI officer stating my Aadhaar was linked to crime.",
-      date: "Yesterday, 02:10 PM",
-      status: "rejected"
-    }
-  ]);
-
+  const [reports, setReports] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // 🌟 NEW: AI Moderation States
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [adminMessage, setAdminMessage] = useState('');
 
-  // Handle Admin Action (Verify or Reject a report)
-  const handleAction = (id, newStatus) => {
+  // 1. Fetch real reports from MongoDB when the component loads
+  const fetchReports = async () => {
+    try {
+      // Assuming you have a GET route to fetch all reports for the admin
+      const response = await axios.get('http://localhost:4000/api/admin/reports', {
+        withCredentials: true
+      });
+      console.log('data : ',response)
+      setReports(response.data);
+    } catch (error) {
+      console.warn("Could not fetch real reports, loading mock data for UI testing...", error);
+      // Hackathon Fallback: If the backend route isn't ready, use the mock data!
+      setReports([
+        {
+          _id: "RPT-8842",
+          user_id: { name: "Rahul Sharma" }, // Mock populated user
+          category: "Financial / Bank Fraud",
+          scammerDetails: "UPI: fake-customs@ybl",
+          description: "They called claiming my FedEx package was seized and demanded ₹4999 via UPI.",
+          status: "pending",
+          aiReason: "",
+          createdAt: new Date().toISOString()
+        },
+        {
+          _id: "RPT-8841",
+          user_id: { name: "Spam Bot" },
+          category: "Unknown",
+          scammerDetails: "dhjskafhjsdkhf",
+          description: "buy cheap shoes link click here please free money",
+          status: "pending",
+          aiReason: "",
+          createdAt: new Date().toISOString()
+        }
+      ]);
+    }
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  // 🌟 2. The AI Bulk Verification Trigger
+  const handleAiVerification = async () => {
+    setIsVerifying(true);
+    setAdminMessage('🤖 AI is reading and moderating all pending reports...');
+
+    try {
+      // Calls the Node.js route we just built!
+      const response = await axios.post('http://localhost:4000/api/admin/verify-pending', {}, {
+        withCredentials: true 
+      });
+
+      // Show the success message (e.g., "Verified: 4, Rejected: 1")
+      setAdminMessage(response.data.message); 
+      
+      // Re-fetch the database to show the newly updated statuses!
+      fetchReports(); 
+
+    } catch (error) {
+      console.error("AI Verification failed:", error);
+      setAdminMessage("🔴 Failed to connect to AI Moderator.");
+    } finally {
+      setIsVerifying(false);
+      // Clear the message after 5 seconds
+      setTimeout(() => setAdminMessage(''), 5000);
+    }
+  };
+
+  // 3. Manual Admin Action (Fallback for human override)
+  const handleAction = async (id, newStatus) => {
+    // Optimistic UI update
     setReports(reports.map(report => 
-      report.id === id ? { ...report, status: newStatus } : report
+      report._id === id ? { ...report, status: newStatus, aiReason: "Manually overridden by Admin" } : report
     ));
+    
+    // Optional: Add an axios.put() here later to save manual overrides to MongoDB!
   };
 
   // Filter reports based on search input
   const filteredReports = reports.filter(report => 
-    report.details.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    report.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    report.mobile.includes(searchTerm)
+    report.scammerDetails?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    report.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -70,11 +102,28 @@ export default function AdminDatabase() {
       <div className={styles.header}>
         <div>
           <h2 className={styles.title}>Global Threat Database</h2>
-          <p className={styles.subtitle}>Admin panel to review community reports and train the AI model.</p>
+          <p className={styles.subtitle}>Admin panel to review community reports and manage threat data.</p>
         </div>
-        <button className={styles.trainBtn}>
-          <FiCpu /> Train AI with Verified Data
-        </button>
+        
+        {/* 🌟 NEW: The AI Moderation Button */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+          <button 
+            className={styles.trainBtn} 
+            onClick={handleAiVerification}
+            disabled={isVerifying}
+            style={{ 
+              background: isVerifying ? '#9ca3af' : '#4f46e5',
+              cursor: isVerifying ? 'wait' : 'pointer'
+            }}
+          >
+            <FiCpu /> {isVerifying ? 'Moderating via AI...' : 'Verify Pending with AI'}
+          </button>
+          {adminMessage && (
+            <span style={{ marginTop: '8px', fontSize: '0.85rem', color: '#059669', fontWeight: 'bold' }}>
+              {adminMessage}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Admin Stats Row */}
@@ -101,7 +150,7 @@ export default function AdminDatabase() {
             <FiSearch className={styles.searchIcon} />
             <input 
               type="text" 
-              placeholder="Search by phone, link, or type..." 
+              placeholder="Search by details or category..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -117,44 +166,50 @@ export default function AdminDatabase() {
                 <th>Victim Details</th>
                 <th>Threat Target (Link/Phone)</th>
                 <th>Category</th>
-                <th>Status</th>
+                <th>Status & AI Logic</th>
                 <th>Admin Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredReports.map((report) => (
-                <tr key={report.id}>
+                <tr key={report._id}>
                   
-                  {/* ADDED data-label attributes to each td */}
                   <td data-label="Report ID">
-                    <span className={styles.reportId}>{report.id}</span>
-                    <span className={styles.dateText}>{report.date}</span>
+                    <span className={styles.reportId}>...{report._id.toString().slice(-6)}</span>
+                    <span className={styles.dateText}>
+                      {new Date(report.createdAt).toLocaleDateString()}
+                    </span>
                   </td>
                   
                   <td data-label="Victim Details">
                     <div className={styles.userInfo}>
-                      <span className={styles.userName}><FiUser /> {report.user}</span>
-                      <span className={styles.userMobile}><FiPhone /> {report.mobile}</span>
+                      <span className={styles.userName}><FiUser /> {report.user_id?.name || 'Anonymous'}</span>
                     </div>
                   </td>
                   
                   <td data-label="Threat Target">
                     <div className={styles.threatInfo}>
-                      <span className={styles.threatDetails}>{report.details}</span>
-                      <span className={styles.threatDesc}>{report.desc}</span>
+                      <span className={styles.threatDetails}>{report.scammerDetails}</span>
+                      <span className={styles.threatDesc}>{report.description}</span>
                     </div>
                   </td>
                   
                   <td data-label="Category">
-                    <span className={`${styles.typeBadge} ${styles[report.type]}`}>
-                      {report.type.toUpperCase()}
+                    <span className={`${styles.typeBadge} ${styles[report.category]}`}>
+                      {report.category}
                     </span>
                   </td>
                   
-                  <td data-label="Status">
+                  <td data-label="Status & AI Logic">
                     <span className={`${styles.statusBadge} ${styles[report.status]}`}>
                       {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
                     </span>
+                    {/* 🌟 Show the AI's reasoning if it was auto-moderated! */}
+                    {report.aiReason && (
+                      <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px', maxWidth: '200px' }}>
+                        <FiCpu style={{ display: 'inline' }}/> {report.aiReason}
+                      </div>
+                    )}
                   </td>
                   
                   <td data-label="Admin Actions">
@@ -162,13 +217,13 @@ export default function AdminDatabase() {
                       <div className={styles.actionButtons}>
                         <button 
                           className={styles.verifyBtn} 
-                          title="Verify & Add to DB"
-                          onClick={() => handleAction(report.id, 'verified')}
+                          title="Manually Verify"
+                          onClick={() => handleAction(report._id, 'verified')}
                         ><FiCheckCircle /></button>
                         <button 
                           className={styles.rejectBtn} 
-                          title="Reject (False Flag)"
-                          onClick={() => handleAction(report.id, 'rejected')}
+                          title="Manually Reject"
+                          onClick={() => handleAction(report._id, 'rejected')}
                         ><FiXCircle /></button>
                       </div>
                     ) : (

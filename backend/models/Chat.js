@@ -14,6 +14,11 @@ const chatSchema = new mongoose.Schema({
     message: {
         type: String,
         required: true
+    },
+    type: {
+        type: String,
+        enum: ['pre', 'post'],
+        required: true
     }
 }, {
     timestamps: true // This automatically creates a 'createdAt' timestamp for every message!

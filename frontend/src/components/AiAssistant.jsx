@@ -1,6 +1,6 @@
 // src/components/AiAssistant.jsx
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios'; // 🌟 Add Axios
+import axios from 'axios';
 import { FiSend, FiCpu, FiUser, FiShield, FiLifeBuoy, FiMessageSquare } from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
 import styles from './AiAssistant.module.css';
@@ -32,17 +32,46 @@ export default function AiAssistant() {
     ]
   };
 
+// ==========================================
+  // DYNAMIC HISTORY FETCHING
+  // ==========================================
+  useEffect(() => {
+    const fetchChatHistory = async () => {
+      try {
+        // 🌟 Add ?type=${mode} to the URL so Node knows which tab is active!
+        const response = await axios.get(`http://localhost:4000/api/chat/history?type=${mode}`, {
+          withCredentials: true 
+        });
+
+        if (response.data && response.data.length > 0) {
+          const dbHistory = response.data.map(chat => ({
+            sender: chat.role === 'ai' ? 'ai' : 'user',
+            text: chat.message 
+          }));
+          setMessages(dbHistory);
+        } else {
+          // If the database is empty for this specific tab, show the default greeting
+          setMessages(initialMessages[mode]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch history:", error);
+      }
+    };
+
+    fetchChatHistory();
+  }, [mode]); // 🌟 CRITICAL: Adding 'mode' here means this runs every time the tab changes!
+
+  // Switch modes
   const handleModeSwitch = (newMode) => {
     setMode(newMode);
-    setMessages(initialMessages[newMode]);
     setInputText('');
+    // Notice we removed setMessages() from here, because the useEffect above 
+    // will automatically handle fetching and setting the correct messages!
   };
 
-  // 🌟 Upgraded to async function
   const handleSend = async (text = inputText) => {
     if (!text.trim()) return;
 
-    // 1. Instantly show the user's message on the screen
     const newMessages = [...messages, { sender: 'user', text }];
     setMessages(newMessages);
     setInputText('');
@@ -50,30 +79,26 @@ export default function AiAssistant() {
 
     try {
       if (mode === 'pre') {
-        // 2. REAL BACKEND CONNECTION FOR PRE-SCAM
         const response = await axios.post(
           'http://localhost:4000/api/chat/pre-scam',
           { message: text },
-          { withCredentials: true } // CRITICAL: Sends the JWT cookie so Node knows who is chatting!
+          { withCredentials: true } 
         );
 
-        // Append Groq's real answer to the chat
         setMessages([...newMessages, { sender: 'ai', text: response.data.reply }]);
 
       } else {
-        // 3. PLACEHOLDER FOR POST-SCAM (Until we build the next route!)
-        setTimeout(() => {
-          setMessages([...newMessages, {
-            sender: 'ai',
-            text: "⚠️ I am the Post-Scam bot. My backend route hasn't been built yet, but I'll be ready soon!"
-          }]);
-          setIsTyping(false);
-        }, 1000);
-        return; // Exit early so we don't hit the finally block for the timeout
+        // --- REAL BACKEND CONNECTION FOR POST-SCAM ---
+        const response = await axios.post(
+          'http://localhost:4000/api/chat/post-scam',
+          { message: text },
+          { withCredentials: true } 
+        );
+
+        setMessages([...newMessages, { sender: 'ai', text: response.data.reply }]);
       }
     } catch (error) {
       console.error("Chat API Error:", error);
-      // If they aren't logged in, or the server crashes, show the error right in the chat!
       const errorMsg = error.response?.data?.error || "I'm having trouble connecting to the security server right now.";
       setMessages([...newMessages, { sender: 'ai', text: `❌ ${errorMsg}` }]);
     } finally {
@@ -81,6 +106,7 @@ export default function AiAssistant() {
     }
   };
 
+  // Auto-scroll effect
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
@@ -121,9 +147,6 @@ export default function AiAssistant() {
                 </div>
               )}
 
-              {/* <div className={msg.sender === 'user' ? styles.bubbleUser : styles.bubbleAi}>
-                {msg.text.split('\n').map((line, i) => <p key={i}>{line}</p>)}
-              </div> */}
               <div className={msg.sender === 'user' ? styles.bubbleUser : styles.bubbleAi}>
                 {msg.sender === 'ai' ? (
                   <ReactMarkdown>{msg.text}</ReactMarkdown>

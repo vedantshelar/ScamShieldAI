@@ -129,7 +129,7 @@ export default function SmsSimulator() {
             <div className={styles.screen}>
               
               <div className={styles.osHeader}>
-                <span>9:41</span>
+                <span>9:41</span> 
                 <div className={styles.osIcons}>
                   <span className={styles.signal}>ılı</span>
                   <span>100%</span>

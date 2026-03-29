@@ -1,18 +1,24 @@
 // src/components/RecoveryHub.jsx
 import React, { useState } from 'react';
+import axios from 'axios'; // 🌟 1. Import Axios
 import { 
   FiPhoneCall, FiShield, FiAlertTriangle, FiCheckCircle, 
-  FiExternalLink, FiLock, FiSend, FiShare2 
+  FiExternalLink, FiLock, FiSend, FiShare2, FiAlertCircle 
 } from 'react-icons/fi';
 import styles from './RecoveryHub.module.css';
 
 export default function RecoveryHub() {
-  // State for the interactive checklist
   const [completedSteps, setCompletedSteps] = useState([]);
   
-  // State for the Community Reporting Form
-  const [reportState, setReportState] = useState('idle'); // idle, submitting, success
-  const [formData, setFormData] = useState({ type: 'financial', details: '', description: '' });
+  const [reportState, setReportState] = useState('idle'); // idle, submitting, success, error
+  const [errorMessage, setErrorMessage] = useState(''); // 🌟 2. Add error state
+  
+  // 🌟 3. Update formData keys to match the backend exactly
+  const [formData, setFormData] = useState({ 
+    category: 'Financial / Bank Fraud', // Default to the exact DB string
+    scammerDetails: '', 
+    description: '' 
+  });
 
   const toggleStep = (stepId) => {
     if (completedSteps.includes(stepId)) {
@@ -22,20 +28,39 @@ export default function RecoveryHub() {
     }
   };
 
-  const handleReportSubmit = (e) => {
+  // 🌟 4. Connect to the real backend
+  const handleReportSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.details || !formData.description) return;
+    if (!formData.scammerDetails || !formData.description) return;
 
     setReportState('submitting');
+    setErrorMessage('');
     
-    // Simulate database upload for the demo
-    setTimeout(() => {
+    try {
+      // Send the data to your Node route
+      const response = await axios.post(
+        'http://localhost:4000/api/reports',
+        formData, // Sends category, scammerDetails, and description
+        { withCredentials: true } // CRITICAL: Proves the user is logged in!
+      );
+
+      console.log("Report Saved:", response.data);
       setReportState('success');
-      setFormData({ type: 'financial', details: '', description: '' });
       
-      // Reset back to idle after 3 seconds
-      setTimeout(() => setReportState('idle'), 3000);
-    }, 1500);
+      // Clear the form fields
+      setFormData({ category: 'Financial / Bank Fraud', scammerDetails: '', description: '' });
+      
+      // Reset back to idle after 4 seconds so they can submit another if needed
+      setTimeout(() => setReportState('idle'), 4000);
+
+    } catch (error) {
+      console.error("Submission Error:", error);
+      setReportState('error');
+      setErrorMessage(error.response?.data?.error || "Failed to connect to the community database.");
+      
+      // Go back to idle so they can try again
+      setTimeout(() => setReportState('idle'), 4000);
+    }
   };
 
   return (
@@ -122,11 +147,18 @@ export default function RecoveryHub() {
           </div>
           <p className={styles.cardDesc}>Your report updates our AI model globally to protect other users instantly.</p>
 
+          {/* Conditional Rendering for Success/Error States */}
           {reportState === 'success' ? (
             <div className={styles.successState}>
               <FiCheckCircle className={styles.successIcon} />
-              <h3>Report Submitted Successfully!</h3>
+              <h3 style={{ color: '#10b981', marginTop: '1rem' }}>Report Submitted Successfully!</h3>
               <p>The ScamShieldAI global database has been updated. Thank you for protecting the community.</p>
+            </div>
+          ) : reportState === 'error' ? (
+            <div className={styles.errorState} style={{ textAlign: 'center', padding: '2rem 0' }}>
+              <FiAlertCircle className={styles.errorIcon} style={{ fontSize: '3rem', color: '#ef4444' }} />
+              <h3 style={{ color: '#ef4444', marginTop: '1rem' }}>Submission Failed</h3>
+              <p>{errorMessage}</p>
             </div>
           ) : (
             <form className={styles.reportForm} onSubmit={handleReportSubmit}>
@@ -135,14 +167,15 @@ export default function RecoveryHub() {
                 <label>Scam Category</label>
                 <select 
                   className={styles.input}
-                  value={formData.type}
-                  onChange={(e) => setFormData({...formData, type: e.target.value})}
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
                 >
-                  <option value="financial">Financial / Bank Fraud</option>
-                  <option value="impersonation">Authority Impersonation (CBI/Customs)</option>
-                  <option value="job">Fake Job / Task Scam</option>
-                  <option value="phishing">Malicious Link / APK</option>
-                  <option value="other">Other</option>
+                  {/* 🌟 5. Match the Mongoose Enums EXACTLY */}
+                  <option value="Financial / Bank Fraud">Financial / Bank Fraud</option>
+                  <option value="Authority Impersonation (CBI/Customs)">Authority Impersonation (CBI/Customs)</option>
+                  <option value="Fake Job / Task Scam">Fake Job / Task Scam</option>
+                  <option value="Malicious Link / APK">Malicious Link / APK</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
 
@@ -152,8 +185,8 @@ export default function RecoveryHub() {
                   type="text" 
                   className={styles.input} 
                   placeholder="e.g., +91 98765 43210 or http://fake-link.com"
-                  value={formData.details}
-                  onChange={(e) => setFormData({...formData, details: e.target.value})}
+                  value={formData.scammerDetails}
+                  onChange={(e) => setFormData({...formData, scammerDetails: e.target.value})}
                   required
                 />
               </div>

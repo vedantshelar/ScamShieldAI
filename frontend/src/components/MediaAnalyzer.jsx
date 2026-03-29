@@ -1,61 +1,59 @@
 // src/components/MediaAnalyzer.jsx
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
-import { FiUploadCloud, FiImage, FiMic, FiFileText, FiAlertOctagon, FiCheckCircle, FiTrash2, FiMaximize } from 'react-icons/fi';
+import { FiUploadCloud, FiImage, FiMic, FiFileText, FiAlertOctagon, FiCheckCircle, FiTrash2, FiMaximize, FiGlobe, FiShield } from 'react-icons/fi';
 import styles from './MediaAnalyzer.module.css';
 
 export default function MediaAnalyzer() {
   const [activeTab, setActiveTab] = useState('image'); // 'image' or 'audio'
-  const [processState, setProcessState] = useState('idle'); // 'idle', 'extracting', 'analyzing', 'complete', 'error'
+  const [processState, setProcessState] = useState('idle'); // 'idle', 'processing', 'complete', 'error'
   
-  // Real data states
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
 
   const fileInputRef = useRef(null);
 
-  // Trigger the hidden file input for BOTH tabs now!
   const handleUploadClick = () => {
     fileInputRef.current.click();
   };
 
-  // 🔥 THE REAL BACKEND FILE UPLOAD (IMAGE & AUDIO) 🔥
+  // 🔥 THE REAL BACKEND FILE UPLOAD 🔥
   const handleFileSelect = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // 1. Setup initial UI states
     setSelectedFile(file);
-    setProcessState('extracting'); 
+    setProcessState('processing'); // Triggers the loading UI
+    setAnalysisResult(null);
     
-    // Only create an image preview URL if it's actually an image
+    // Create an image preview URL if it's an image
     if (activeTab === 'image') {
       setPreviewUrl(URL.createObjectURL(file));
     }
 
-    // 2. Prepare the FormData
+    // Prepare the multipart/form-data payload
     const formData = new FormData();
     
     try {
       let response;
 
-      // 3. Route to the correct Node.js endpoint based on the active tab
+      // Route to the correct Node.js endpoint based on the active tab
       if (activeTab === 'image') {
-        formData.append('scamImage', file); // Matches upload.single('scamImage')
+        formData.append('scamImage', file); 
         response = await axios.post('http://localhost:4000/api/scan-image', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: { 'Content-Type': 'multipart/form-data' },
+          withCredentials: true
         });
       } else if (activeTab === 'audio') {
-        formData.append('scamAudio', file); // Matches upload.single('scamAudio')
+        formData.append('scamAudio', file); 
         response = await axios.post('http://localhost:4000/api/scan-audio', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: { 'Content-Type': 'multipart/form-data' },
+          withCredentials: true
         });
       }
 
       console.log("AI Result Data: ", response.data);
-
-      // 4. Update UI with the final Groq/Python data
       setAnalysisResult(response.data);
       setProcessState('complete');
 
@@ -67,10 +65,11 @@ export default function MediaAnalyzer() {
 
   const resetAnalyzer = () => {
     setSelectedFile(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl); // Prevent memory leaks
     setPreviewUrl(null);
     setAnalysisResult(null);
     setProcessState('idle');
-    if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = ''; 
   };
 
   return (
@@ -81,32 +80,29 @@ export default function MediaAnalyzer() {
         <p className={styles.subtitle}>Upload screenshots or audio recordings to extract text and detect scams.</p>
       </div>
 
-      {/* Dynamic File Input - Changes accepted file types based on the active tab! */}
       <input 
         type="file" 
         ref={fileInputRef} 
         onChange={handleFileSelect} 
-        accept={activeTab === 'image' ? "image/png, image/jpeg, image/jpg" : "audio/mp3, audio/wav, audio/mpeg, audio/m4a"} 
+        accept={activeTab === 'image' ? "image/png, image/jpeg, image/jpg" : "audio/mp3, audio/wav, audio/mpeg, audio/m4a, audio/webm"} 
         style={{ display: 'none' }} 
       />
 
-      {/* Tabs */}
       <div className={styles.tabContainer}>
         <button 
           className={activeTab === 'image' ? styles.activeTab : styles.tab}
           onClick={() => { setActiveTab('image'); resetAnalyzer(); }}
         >
-          <FiImage className={styles.tabIcon} /> Image / Screenshot (Real API)
+          <FiImage className={styles.tabIcon} /> Image / Screenshot
         </button>
         <button 
           className={activeTab === 'audio' ? styles.activeTab : styles.tab}
           onClick={() => { setActiveTab('audio'); resetAnalyzer(); }}
         >
-          <FiMic className={styles.tabIcon} /> Audio / VoIP Call (Real API)
+          <FiMic className={styles.tabIcon} /> Audio / VoIP Call
         </button>
       </div>
 
-      {/* State 1: Upload Zone */}
       {processState === 'idle' && (
         <div className={styles.uploadZone}>
           <div className={styles.uploadIconCircle}>
@@ -122,7 +118,6 @@ export default function MediaAnalyzer() {
         </div>
       )}
 
-      {/* States: Processing and Results */}
       {processState !== 'idle' && selectedFile && (
         <div className={styles.analysisGrid}>
           
@@ -135,37 +130,34 @@ export default function MediaAnalyzer() {
               <button className={styles.iconButton} onClick={resetAnalyzer}><FiTrash2 /></button>
             </div>
 
-            {/* Media Preview Area */}
             <div className={styles.previewBox}>
               {activeTab === 'image' && previewUrl ? (
                 <div className={styles.imageContainer}>
                   <img src={previewUrl} alt="Uploaded Scam" className={styles.uploadedImage} />
-                  {processState === 'extracting' && <div className={styles.scannerLine}></div>}
+                  {processState === 'processing' && <div className={styles.scannerLine}></div>}
                 </div>
               ) : (
                 <div className={styles.audioWaveform}>
-                  {/* Fake Audio Waves that animate while extracting */}
-                  <div className={`${styles.waveBar} ${processState !== 'complete' ? styles.animateWave : ''}`}></div>
-                  <div className={`${styles.waveBar} ${processState !== 'complete' ? styles.animateWave : ''}`} style={{ animationDelay: '0.2s' }}></div>
-                  <div className={`${styles.waveBar} ${processState !== 'complete' ? styles.animateWave : ''}`} style={{ animationDelay: '0.4s' }}></div>
-                  <div className={`${styles.waveBar} ${processState !== 'complete' ? styles.animateWave : ''}`} style={{ animationDelay: '0.1s' }}></div>
+                  <div className={`${styles.waveBar} ${processState === 'processing' ? styles.animateWave : ''}`}></div>
+                  <div className={`${styles.waveBar} ${processState === 'processing' ? styles.animateWave : ''}`} style={{ animationDelay: '0.2s' }}></div>
+                  <div className={`${styles.waveBar} ${processState === 'processing' ? styles.animateWave : ''}`} style={{ animationDelay: '0.4s' }}></div>
+                  <div className={`${styles.waveBar} ${processState === 'processing' ? styles.animateWave : ''}`} style={{ animationDelay: '0.1s' }}></div>
                 </div>
               )}
             </div>
 
-            {/* Extracted Text Box */}
             <div className={styles.extractedTextContainer}>
               <div className={styles.textHeader}>
                 <FiFileText /> 
                 <span>{activeTab === 'image' ? 'OCR Extracted Text' : 'Speech-to-Text Transcript'}</span>
               </div>
               <div className={styles.textBody}>
-                {processState === 'extracting' ? (
+                {processState === 'processing' ? (
                   <span className={styles.loadingText}>
-                    {activeTab === 'image' ? 'Running OCR Engine...' : 'Transcribing Audio via AI...'}
+                    {activeTab === 'image' ? 'Running Tesseract OCR Engine...' : 'Transcribing Audio via Whisper AI...'}
                   </span>
                 ) : processState === 'error' ? (
-                  <span className={styles.errorText}>Failed to extract text.</span>
+                  <span className={styles.errorText}>Failed to extract data. Ensure servers are running.</span>
                 ) : (
                   <p>{analysisResult?.extracted_text || "No text detected."}</p>
                 )}
@@ -180,17 +172,11 @@ export default function MediaAnalyzer() {
             </div>
 
             <div className={styles.aiEngineBody}>
-              {processState === 'extracting' && (
+              
+              {processState === 'processing' && (
                 <div className={styles.waitingState}>
                   <div className={styles.spinner}></div>
-                  <p>Extracting data from media...</p>
-                </div>
-              )}
-
-              {processState === 'analyzing' && (
-                <div className={styles.waitingState}>
-                  <div className={styles.radarIcon}><FiMaximize /></div>
-                  <p className={styles.pulseText}>Analyzing contextual patterns...</p>
+                  <p>Deconstructing media & querying AI models...</p>
                 </div>
               )}
 
@@ -211,8 +197,22 @@ export default function MediaAnalyzer() {
                     <h3>{analysisResult.type}</h3>
                   </div>
 
+                  {/* 🌟 NEW: Dynamic Badges for Audio Language and ML Expert */}
+                  <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#6b7280', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    {activeTab === 'audio' && analysisResult.detected_language && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <FiGlobe /> Language: <strong>{analysisResult.detected_language}</strong>
+                      </span>
+                    )}
+                    {activeTab === 'image' && analysisResult.expert_used && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <FiShield /> Scored by: <strong>{analysisResult.expert_used === 'Not sure' ? 'General Threat' : analysisResult.expert_used} Expert Model</strong>
+                      </span>
+                    )}
+                  </div>
+
                   {analysisResult.manipulation && analysisResult.manipulation.length > 0 && (
-                    <div style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
+                    <div style={{ margin: '1rem 0', fontSize: '0.9rem' }}>
                       <strong style={{ color: '#57534e' }}>Tactics Detected: </strong>
                       <span style={{ color: '#dc2626', fontWeight: 'bold' }}>
                         {analysisResult.manipulation.join(' • ')}

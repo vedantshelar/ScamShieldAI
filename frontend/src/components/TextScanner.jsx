@@ -1,6 +1,7 @@
 // src/components/TextScanner.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
+// Removed FiFilter since we don't need the dropdown icon anymore
 import { FiSmartphone, FiShield, FiAlertOctagon, FiCheckCircle, FiCrosshair, FiCpu } from 'react-icons/fi';
 import styles from './TextScanner.module.css';
 
@@ -11,12 +12,14 @@ export default function TextScanner() {
 
   // Demo messages for the hackathon pitch
   const demoMessages = {
-    otp: "Dear Customer, your bank account will be suspended in 15 mins. Please update your PAN card immediately here: http://kyc-update-secure.in/login",
+    otp: "Dear Customer, your Airtel SIM will be blocked in 24 hrs. Please reply with the OTP 8493 to verify your KYC.",
     job: "Congratulations! You have been selected for a remote part-time job. Earn ₹5000 daily. Click the WhatsApp link to contact HR: wa.me/fake-link",
+    bank: "URGENT: Your HDFC bank account will be suspended today. Update KYC PAN immediately: http://hdfc-kyc-update.net",
+    da: "CBI Alert: Your Aadhaar is linked to money laundering. Join Skype video call immediately for interrogation.",
     safe: "Hi mom, I'll be late for dinner tonight. See you around 8 PM!"
   };
 
-  // 🔥 THE REAL BACKEND CONNECTION (AXIOS) 🔥
+  // 🔥 THE REAL BACKEND CONNECTION (AUTO-ROUTING) 🔥
   const handleScan = async () => {
     if (!inputText.trim()) return;
     
@@ -24,26 +27,23 @@ export default function TextScanner() {
     setResult(null);
 
     try {
-      // 1. Send the text to the Node.js Gateway using Axios
+      // 1. Send ONLY the text. The Node.js backend will Auto-Detect the category!
       const response = await axios.post('http://localhost:4000/api/scan', {
         message: inputText
       });
 
-      // 2. Axios automatically parses the JSON into response.data!
       const realAiData = response.data;
-      
-      // 3. Plug it directly into the UI
       setResult(realAiData);
 
     } catch (error) {
       console.error("Backend connection failed:", error);
-      // Fallback UI just in case the servers drop during the demo
       setResult({
         status: 'danger',
         score: 0,
         type: 'Server Disconnected',
         manipulation: ['Offline'],
-        explanation: 'Could not connect to the ScamShieldAI neural network. Please ensure the Node.js and Python microservices are running on ports 4000 and 5000.'
+        explanation: 'Could not connect to the ScamShieldAI neural network. Please ensure the Node.js and Python microservices are running on ports 4000 and 5000.',
+        expert_used: 'None'
       });
     } finally {
       setIsScanning(false);
@@ -79,13 +79,15 @@ export default function TextScanner() {
             onClick={handleScan}
             disabled={isScanning || !inputText.trim()}
           >
-            {isScanning ? 'Analyzing with AI...' : 'Scan Message'}
+            {isScanning ? 'Auto-Detecting & Analyzing...' : 'Scan Message'}
           </button>
 
-          {/* Hackathon Demo Injectors */}
+          {/* Hackathon Demo Injectors - Cleaned up! */}
           <div className={styles.demoSection}>
             <p>Quick Demo Injectors:</p>
-            <div className={styles.demoButtons}>
+            <div className={styles.demoButtons} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <button onClick={() => setInputText(demoMessages.bank)}>Inject Bank Fraud</button>
+              <button onClick={() => setInputText(demoMessages.da)}>Inject Digital Arrest</button>
               <button onClick={() => setInputText(demoMessages.otp)}>Inject OTP Scam</button>
               <button onClick={() => setInputText(demoMessages.job)}>Inject Job Fraud</button>
               <button onClick={() => setInputText(demoMessages.safe)}>Inject Safe Text</button>
@@ -113,7 +115,7 @@ export default function TextScanner() {
           {isScanning && (
             <div className={styles.scanningState}>
               <div className={styles.radar}></div>
-              <p>Deconstructing text patterns...</p>
+              <p>Groq AI is auto-routing your message to the correct Expert Model...</p>
             </div>
           )}
 
@@ -134,7 +136,12 @@ export default function TextScanner() {
                 </div>
               </div>
 
-              <div className={styles.analysisBox}>
+              {/* 🌟 Expert Badge dynamically populated by Node & Python! */}
+              <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <FiShield /> Scored by: <strong>{result.expert_used === 'Not sure' ? 'General Threat' : result.expert_used} Expert Model</strong>
+              </div>
+
+              <div className={styles.analysisBox} style={{ marginTop: '1rem' }}>
                 <h4>Psychological Manipulation Detected:</h4>
                 <div className={styles.tagContainer}>
                   {result.manipulation && result.manipulation.length > 0 ? (

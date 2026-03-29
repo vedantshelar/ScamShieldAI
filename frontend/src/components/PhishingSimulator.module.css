@@ -1,0 +1,71 @@
+.container {
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    background-color: #f8fafc;
+  }
+  
+  .card {
+    background: white;
+    width: 100%;
+    max-width: 500px;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+  }
+  
+  .iconHeader {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .iconCircle {
+    width: 70px;
+    height: 70px;
+    background: #fffbeb;
+    color: #b45309;
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin: 0 auto 15px;
+    border: 2px solid #fcd34d;
+  }
+  
+  .iconHeader h2 { margin: 0; color: #1e293b; font-size: 1.5rem; }
+  .iconHeader p { color: #64748b; margin-top: 8px; font-size: 0.95rem; }
+  
+  .inputGroup { margin-bottom: 20px; text-align: left; }
+  .inputGroup label { display: block; margin-bottom: 8px; font-weight: 600; color: #475569; }
+  .inputGroup input {
+    width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1;
+    font-size: 1rem; transition: all 0.2s; box-sizing: border-box;
+  }
+  
+  .launchBtn {
+    width: 100%; padding: 14px; border-radius: 8px; border: none;
+    background: #b45309; color: white; font-weight: bold; font-size: 1rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: background 0.2s;
+  }
+  
+  .launchBtn:hover { background: #92400e; }
+  
+  .status {
+    margin-top: 20px; padding: 12px; border-radius: 8px; display: flex;
+    align-items: center; gap: 10px; font-size: 0.9rem;
+  }
+  
+  .success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  .info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+  
+  .footerInfo {
+      margin-top: 30px; padding-top: 20px; border-top: 1px solid #f1f5f9; text-align: left;
+  }
+  .footerInfo h4 { display: flex; alignItems: center; gap: 5px; color: #475569; margin-bottom: 10px;}
+  .footerInfo ul { padding-left: 20px; color: #64748b; font-size: 0.85rem; }
